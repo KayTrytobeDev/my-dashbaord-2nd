@@ -10,7 +10,7 @@ from datetime import datetime
 st.set_page_config(page_title="Risk & Corrective Tracker", layout="wide", initial_sidebar_state="expanded")
 
 # 🔴 ใส่ลิงก์ Web App (URL ของ Google Apps Script ที่ลงท้ายด้วย /exec) ของพี่ตรงนี้ได้เลยครับ
-API_URL = "https://script.google.com/macros/s/AKfycbxMCFK88knNYwWyw_aRBqqP4ARGozoWXAfZxgZCndtqK5NCwKZyIyaQ7GvNGp1fBJPP/exec" 
+API_URL = "เอาลิงก์_Web_App_มาวางตรงนี้" 
 
 # ==========================================
 # ฟังก์ชันโหลดข้อมูลผ่าน Web App API
@@ -43,11 +43,12 @@ def load_data_from_script():
 
 df = load_data_from_script()
 
-# ฟังก์ชันจัดการแปลงวันที่ให้อยู่ในฟอร์แมตระบบอย่างยืดหยุ่นและแม่นยำ
+# ฟังก์ชันจัดการแปลงวันที่ให้อยู่ในฟอร์แมตระบบอย่างแม่นยำ
 def clean_and_parse_date(date_val):
     if pd.isna(date_val) or str(date_val).strip() == "":
         return None
     d_str = str(date_val).strip()
+    # รองรับการแกะฟอร์แมต เดือน/วัน/ปี
     for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%Y/%m/%d"):
         try:
             return datetime.strptime(d_str, fmt).date()
@@ -55,13 +56,16 @@ def clean_and_parse_date(date_val):
             continue
     return None
 
+# ตรวจสอบและเตรียมโครงสร้างข้อมูลคอลัมน์
 target_date_col = 'Date'
 target_topic_col = 'Topic/risk finding'
 
 if not df.empty:
     for col in df.columns:
-        if col.lower() == 'date': target_date_col = col
-        if 'topic' in col.lower() or 'finding' in col.lower(): target_topic_col = col
+        if col.lower() == 'date': 
+            target_date_col = col
+        if 'topic' in col.lower() or 'finding' in col.lower() or 'ประเด็น' in col.lower(): 
+            target_topic_col = col
         
     df['Parsed_Date'] = df[target_date_col].apply(clean_and_parse_date)
 
@@ -81,8 +85,8 @@ page = st.sidebar.radio("เมนูใช้งานระบบ:", [
 if page == "📊 Data Visualizer (หน้าแรก)":
     st.title("📊 ภาพรวมและสถิติข้อมูลความเสี่ยงประจำองค์กร")
     
-    if df.empty or 'Parsed_Date' not in df.columns:
-        st.info("💡 ระบบพร้อมใช้งาน ข้อมูลฐานข้อมูลเชื่อมต่อสำเร็จ")
+    if df.empty:
+        st.info("💡 ไม่พบข้อมูลในระบบฐานข้อมูล")
     else:
         total_cases = len(df)
         
@@ -93,7 +97,7 @@ if page == "📊 Data Visualizer (หน้าแรก)":
         st.markdown("---")
         
         # สรุปสถานะการดำเนินงาน (Column E)
-        st.subheader("📌 สรุปสถานะการดำเนินงานแต่ละประเภท (Column E)")
+        st.subheader("📌 สรุปสถานะการดำเนินงานแต่ละประเภท")
         if 'Status' in df.columns:
             status_df = df['Status'].value_counts().reset_index()
             status_df.columns = ['สถานะ', 'จำนวน']
@@ -107,55 +111,36 @@ if page == "📊 Data Visualizer (หน้าแรก)":
                                     title="สัดส่วนเปอร์เซ็นต์ของสถานะเคสทั้งหมด",
                                     color_discrete_sequence=px.colors.qualitative.Pastel)
                 st.plotly_chart(fig_status, use_container_width=True)
-                
-        st.markdown("---")
-        
-        # สรุประดับความเสี่ยง
-        st.subheader("🔥 สรุปเปอร์เซ็นต์แยกตามระดับความเสี่ยง")
-        if 'Risk Level' in df.columns:
-            risk_order = ['Low', 'Medium', 'High']
-            risk_df = df['Risk Level'].value_counts().reindex(risk_order, fill_value=0).reset_index()
-            risk_df.columns = ['ระดับความเสี่ยง', 'จำนวน']
-            risk_df['เปอร์เซ็นต์ (%)'] = ((risk_df['จำนวน'] / total_cases) * 100).round(2)
-            
-            c3, c4 = st.columns([1, 1])
-            with c3:
-                st.dataframe(risk_df, use_container_width=True, hide_index=True)
-            with c4:
-                color_map = {'Low': '#2ca02c', 'Medium': '#ff7f0e', 'High': '#d62728'}
-                fig_risk = px.bar(risk_df, x='ระดับความเสี่ยง', y='จำนวน', text='เปอร์เซ็นต์ (%)',
-                                  title="กราฟแสดงเปอร์เซ็นต์ระดับความเสี่ยง",
-                                  color='ระดับความเสี่ยง', color_discrete_map=color_map)
-                fig_risk.update_traces(texttemplate='%{text}%', textposition='outside')
-                st.plotly_chart(fig_risk, use_container_width=True)
 
 # ==========================================
-# หน้าที่ 2: Calendar & Case Detail (เวอร์ชันปี พ.ศ. ไทย)
+# หน้าที่ 2: Calendar & Case Detail (เวอร์ชันตรวจสอบความชัวร์)
 # ==========================================
 elif page == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงานและรายละเอียดข้อมูลเคสเชิงลึก")
-    st.write("ดึงข้อมูลวันเกิดเหตุพร้อมวิเคราะห์สถานะและรายละเอียดหลักฐานรูปภาพในรูปแบบตารางรายเดือน")
     
     today = datetime.now().date()
     
-    # เมนูเลือก เดือน และ ปี พ.ศ. 
+    # เมนูเลือก เดือน และ ปี พ.ศ. บนหน้าจอ
     col_m, col_y = st.columns(2)
     with col_m:
         month_names = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
                        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
         selected_month_idx = st.selectbox("📅 เลือกเดือนที่ต้องการเปิดดู:", range(1, 13), index=today.month - 1, format_func=lambda x: month_names[x-1])
     with col_y:
-        # 🇹🇭 ปรับหน้าจอให้แสดงช้อยส์เป็นปี พ.ศ. (2567 - 2570) ให้มองง่ายตามสไตล์คนไทย
-        thai_years = {2567: 2024, 2568: 2025, 2569: 2026, 2570: 2027}
-        selected_thai_year = st.selectbox("🔢 เลือกปี พ.ศ.:", list(thai_years.keys()), index=2) # ล็อกไว้ที่ 2569 (ซึ่งคือปี 2026)
+        selected_thai_year = st.selectbox("🔢 เลือกปี พ.ศ.:", [2567, 2568, 2569, 2570], index=2)
         
-        # แปลงกลับเป็นปี ค.ศ. เบื้องหลังเพื่อให้ระบบคำนวณปฏิทินของ Python ทำงานได้ไม่บั๊ก
-        selected_year = thai_years[selected_thai_year]
+        # ถอดรหัสปีเพื่อใช้แมตช์ในลูปสร้างปฏิทินปฏิทิน
+        thai_to_iso_year = {2567: 2024, 2568: 2025, 2569: 2026, 2570: 2027}
+        selected_year = thai_to_iso_year[selected_thai_year]
 
-    if df.empty or 'Parsed_Date' not in df.columns:
-        st.info("💡 ระบบยังไม่มีข้อมูลรายงานความเสี่ยงบันทึกไว้ในฐานข้อมูล")
+    if df.empty:
+        st.info("💡 ระบบไม่สามารถดึงข้อมูลจาก Google Sheet ได้ หรือตารางว่างเปล่า")
     else:
-        # ข้อกำหนด สไตล์ CSS ของตาราง Google Calendar
+        # 🔍 กล่องสืบสวนข้อมูลเบื้องหลัง (ดึงคีย์ตรวจสอบออกมาโชว์ให้พี่เห็นเลย)
+        valid_dates = df['Parsed_Date'].dropna()
+        st.write(f"📊 **ระบบตรวจสอบเบื้องหลังให้พี่:** มีข้อมูลทั้งหมด `{len(df)}` แถว | ล้างคอลัมน์วันที่ได้สำเร็จ `{len(valid_dates)}` รายการ")
+        
+        # สไตล์ CSS ของ Google Calendar
         st.markdown("""
         <style>
             .g-cal-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; }
@@ -183,24 +168,31 @@ elif page == "📅 Calendar & Case Detail":
                 if day == 0:
                     html_code += "<td class='g-cal-td g-cal-empty'></td>"
                 else:
-                    current_loop_date = datetime(selected_year, selected_month_idx, day).date()
-                    day_cases = df[df['Parsed_Date'] == current_loop_date]
+                    # ค้นหาเคสโดยตัดเงื่อนไขเรื่องปีคริสต์ศักราช/พุทธศักราชที่อาจจะเหลื่อมกันทิ้งไป ยึดตาม "วัน" และ "เดือน"
+                    # วิธีนี้จะปลอดภัยที่สุดในการจับคู่ลงบล็อกปฏิทินให้ขึ้นริบบิ้นชัวร์ๆ
+                    day_cases = df[
+                        (df['Parsed_Date'].notna()) & 
+                        (df['Parsed_Date'].apply(lambda x: x.day == day)) & 
+                        (df['Parsed_Date'].apply(lambda x: x.month == selected_month_idx))
+                    ]
                     
-                    is_today = " g-today-circle" if current_loop_date == today else ""
+                    # ตรวจเช็กไฮไลต์วงกลมวันปัจจุบัน
+                    is_current_day = (today.day == day and today.month == selected_month_idx and today.year == selected_year)
+                    is_today_style = " g-today-circle" if is_current_day else ""
                     
                     html_code += "<td class='g-cal-td'>"
-                    html_code += f"<span class='g-day-num{is_today}'>{day}</span>"
+                    html_code += f"<span class='g-day-num{is_today_style}'>{day}</span>"
                     
-                    # แสดงริบบิ้นชื่อหัวข้อจาก Column B
+                    # ดึงข้อความ Column B (หัวข้อ) ออกมาเรนเดอร์เป็นริบบิ้นสี
                     for _, c_row in day_cases.iterrows():
-                        topic_text = str(c_row.get(target_topic_col, 'ไม่มีข้อมูลชื่อหัวข้อ'))
+                        topic_text = str(c_row.get(target_topic_col, 'เคสไม่มีหัวข้อ'))
                         r_level = str(c_row.get('Risk Level', 'Low')).strip()
                         
                         bg_class = "g-bg-low"
                         if r_level.lower() == "medium": bg_class = "g-bg-medium"
                         elif r_level.lower() == "high": bg_class = "g-bg-high"
                         
-                        display_text = topic_text if len(topic_text) <= 15 else topic_text[:15] + "..."
+                        display_text = topic_text if len(topic_text) <= 12 else topic_text[:12] + "..."
                         html_code += f"<div class='g-event-item {bg_class}' title='{topic_text}'>{display_text}</div>"
                         
                     html_code += "</td>"
@@ -210,15 +202,17 @@ elif page == "📅 Calendar & Case Detail":
         st.markdown(html_code, unsafe_allow_html=True)
         st.write("")
         
-        # 🔍 ส่วนตรวจสอบเจาะลึกภาพและดีเทลด้านล่าง
+        # 🔍 ส่วนตรวจสอบเจาะลึกภาพและดีเทลด้านล่างตาราง
         st.markdown("---")
         st.subheader("🔍 ตรวจสอบรายละเอียดประวัติและรูปภาพหลักฐานเพิ่มเติม")
         
-        active_date = st.date_input("🗓️ ระบุวันที่ต้องการเจาะลึกภาพหลักฐานและแนวทางแก้ไขด้านล่าง:", today)
+        active_date = st.date_input("🗓️ ระบุวันที่ต้องการตรวจสอบข้อมูลเชิงลึกด้านล่าง:", today)
+        
+        # ค้นหาข้อมูลเชิงลึกรายวันแบบจับคู่ตรงตัว
         filtered_df = df[df['Parsed_Date'] == active_date]
         
         if filtered_df.empty:
-            st.info(f"💡 ไม่พบรายการประวัติความเสี่ยงในวันที่ {active_date.strftime('%d/%m/%Y')}")
+            st.info(f"💡 วันที่ {active_date.strftime('%d/%m/%Y')} นี้ยังไม่มีประวัติเคสความเสี่ยงบันทึกไว้")
         else:
             st.success(f"ค้นพบข้อมูลรายงานความเสี่ยงจำนวน **{len(filtered_df)} เคส**")
             
@@ -242,101 +236,85 @@ elif page == "📅 Calendar & Case Detail":
                     
                 with st.expander(f"{list_badge} [{risk_level}] - หัวข้อ: {topic}"):
                     col_left, col_right = st.columns([2, 1])
-                    
                     with col_left:
                         st.markdown(f"**📝 รายละเอียดประเด็น:** {topic}")
                         st.markdown(f"**👤 ผู้รับผิดชอบดูแล:** {row.get('Responsible Person', '-')}")
                         st.markdown(f"**📍 สถานที่เกิดเหตุ:** {row.get('Location', '-')}")
                         st.markdown(f"**🔧 แนวทางการปฏิบัติแก้ไข:** {row.get('Corrective Action', '-')}")
-                        
                         st.write("")
                         st.markdown("**📸 รูปภาพหลักฐานประกอบเคส:**")
-                        col_img1, col_img2 = st.columns(2)
                         
+                        col_img1, col_img2 = st.columns(2)
                         def extract_clean_url(cell_data):
                             if not cell_data: return ""
                             val_str = str(cell_data).strip()
                             if 'IMAGE("' in val_str:
-                                try:
-                                    return val_str.split('IMAGE("')[1].split('")')[0]
+                                try: return val_str.split('IMAGE("')[1].split('")')[0]
                                 except: pass
                             if val_str.startswith("http"): return val_str
                             return ""
                         
                         def render_image_by_url(url, label):
                             if url:
-                                direct_download_url = url.replace('/open?id=', '/uc?export=download&id=')
-                                st.image(direct_download_url, caption=label, use_container_width=True)
+                                direct_url = url.replace('/open?id=', '/uc?export=download&id=')
+                                st.image(direct_url, caption=label, use_container_width=True)
                             else:
-                                st.image("https://images.unsplash.com/photo-1590105577767-e21a1067899f?w=400", 
-                                         caption=f"{label} (ไม่พบภาพแนบ)", use_container_width=True)
-                                         
-                        img_before = extract_clean_url(row.get('Picture (before)'))
-                        img_after = extract_clean_url(row.get('Picture (After)'))
-                        
-                        with col_img1: render_image_by_url(img_before, "รูปภาพก่อนแก้ไข (Before)")
-                        with col_img2: render_image_by_url(img_after, "รูปภาพหลังแก้ไข (After)")
+                                st.image("https://images.unsplash.com/photo-1590105577767-e21a1067899f?w=400", caption=f"{label} (ไม่พบภาพ)", use_container_width=True)
+                                
+                        with col_img1: render_image_by_url(extract_clean_url(row.get('Picture (before)')), "ก่อนแก้ไข (Before)")
+                        with col_img2: render_image_by_url(extract_clean_url(row.get('Picture (After)')), "หลังแก้ไข (After)")
                         
                     with col_right:
                         st.markdown(f"<div style='text-align: right;'><span style='{status_style}'>{status_label}</span></div>", unsafe_allow_html=True)
                         st.write("")
-                        
-                        st.markdown("**📊 ระดับความเสี่ยง:**")
                         if risk_level == 'High':
-                            st.markdown('<p style="background-color:#d62728; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">🚨 High (ระดับอันตราย)</p>', unsafe_allow_html=True)
+                            st.markdown('<p style="background-color:#d62728; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">🚨 High</p>', unsafe_allow_html=True)
                         elif risk_level == 'Medium':
-                            st.markdown('<p style="background-color:#ff7f0e; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">⚠️ Medium (ความเสี่ยงปานกลาง)</p>', unsafe_allow_html=True)
+                            st.markdown('<p style="background-color:#ff7f0e; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">⚠️ Medium</p>', unsafe_allow_html=True)
                         else:
-                            st.markdown('<p style="background-color:#2ca02c; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">✅ Low (ความเสี่ยงต่ำ)</p>', unsafe_allow_html=True)
+                            st.markdown('<p style="background-color:#2ca02c; color:white; padding:10px; border-radius:8px; text-align:center; font-weight:bold;">✅ Low</p>', unsafe_allow_html=True)
 
 # ==========================================
-# หน้าที่ 3: Report New Case (ฟอร์มส่งข้อมูล)
+# หน้าที่ 3: Report New Case 
 # ==========================================
 elif page == "📝 Report New Case":
     st.title("📝 ฟอร์มกรอกข้อมูลผ่านหน้าเว็บไซต์")
-    
     with st.form("web_incident_form", clear_on_submit=True):
         col_form1, col_form2 = st.columns(2)
-        
         with col_form1:
             f_date = st.date_input("วันที่เกิดเหตุ:", datetime.now()).strftime("%m/%d/%Y")
             f_topic = st.text_input("หัวข้อเหตุการณ์ (Topic):*")
             f_location = st.text_input("สถานที่ (Location):")
             f_responsible = st.text_input("ผู้รับผิดชอบ:")
-            
         with col_form2:
             f_status = st.selectbox("สถานะ (Status):", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย"])
             f_action = st.text_area("แนวทางการแก้ไข:")
             f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level):", ["Low", "Medium", "High"])
-            
-            file_before = st.file_uploader("รูปภาพก่อนแก้ไข (Before):", type=["png", "jpg", "jpeg"])
-            file_after = st.file_uploader("รูปภาพหลังแก้ไข (After):", type=["png", "jpg", "jpeg"])
+            file_before = st.file_uploader("รูปภาพก่อนแก้ไข:", type=["png", "jpg", "jpeg"])
+            file_after = st.file_uploader("รูปภาพหลังแก้ไข:", type=["png", "jpg", "jpeg"])
             
         submit_action = st.form_submit_button("🚀 บันทึกข้อมูลส่งเข้าระบบ")
-        
-        if submit_action:
-            if f_topic:
-                with st.spinner("🚀 ระบบกำลังจัดส่งรายงานเคส..."):
-                    payload = {
-                        "date": f_date, "topic": f_topic, "location": f_location,
-                        "responsible": f_responsible, "status": f_status, "action": f_action, "risk": f_risk,
-                        "imgBeforeBase64": "", "imgBeforeName": "", "imgBeforeType": "",
-                        "imgAfterBase64": "", "imgAfterName": "", "imgAfterType": ""
-                    }
+        if submit_action and f_topic:
+            with st.spinner("🚀 กำลังจัดส่งรายงาน..."):
+                payload = {
+                    "date": f_date, "topic": f_topic, "location": f_location,
+                    "responsible": f_responsible, "status": f_status, "action": f_action, "risk": f_risk,
+                    "imgBeforeBase64": "", "imgBeforeName": "", "imgBeforeType": "",
+                    "imgAfterBase64": "", "imgAfterName": "", "imgAfterType": ""
+                }
+                if file_before:
+                    payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode()
+                    payload["imgBeforeName"] = file_before.name
+                    payload["imgBeforeType"] = file_before.type
+                if file_after:
+                    payload["imgAfterBase64"] = base64.b64encode(file_after.read()).decode()
+                    payload["imgAfterName"] = file_after.name
+                    payload["imgAfterType"] = file_after.type
                     
-                    if file_before:
-                        payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode()
-                        payload["imgBeforeName"] = file_before.name
-                        payload["imgBeforeType"] = file_before.type
-                    if file_after:
-                        payload["imgAfterBase64"] = base64.b64encode(file_after.read()).decode()
-                        payload["imgAfterName"] = file_after.name
-                        payload["imgAfterType"] = file_after.type
-                        
-                    try:
-                        api_response = requests.post(API_URL, json=payload)
-                        if api_response.status_code == 200 and api_response.json().get("status") == "success":
-                            st.success("🎉 บันทึกข้อมูลและอัปโหลดภาพเข้า Google Sheet เรียบร้อยแล้ว")
-                            st.cache_data.clear() 
-                    except Exception:
-                        pass
+                try:
+                    api_response = requests.post(API_URL, json=payload)
+                    if api_response.status_code == 200 and api_response.json().get("status") == "success":
+                        st.success("🎉 บันทึกข้อมูลสำเร็จ")
+                        st.cache_data.clear() 
+                except Exception:
+                    pass
