@@ -62,13 +62,13 @@ elif menu == "📅 Calendar & Case Detail":
 
     # 1. เลือกเดือน/ปี
     col1, col2 = st.columns(2)
-    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=0, format_func=lambda x: calendar.month_name[x])
+    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
     with col2: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
 
-    # 2. กรองข้อมูล (ใช้คอลัมน์แรกที่ดึงมาได้ ซึ่งคือคอลัมน์ Date)
+    # 2. กรองข้อมูล
     df['Date_Obj'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
     
-    # 3. สร้างตาราง Grid แบบง่าย
+    # 3. สร้างตาราง Grid
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdayscalendar(year, month)
     
@@ -83,18 +83,29 @@ elif menu == "📅 Calendar & Case Detail":
         for i, day in enumerate(week):
             if day != 0:
                 with cols[i]:
-                    st.write(f"{day}")
                     # ดึงข้อมูลของวันนี้
                     day_data = df[(df['Date_Obj'].dt.day == day) & 
                                   (df['Date_Obj'].dt.month == month) & 
                                   (df['Date_Obj'].dt.year == year)]
                     
-                    # โชว์ริบบิ้น (ใช้ข้อความธรรมดาป้องกัน Error)
+                    # --- ส่วนที่เพิ่ม: การ Mark สีพื้นหลัง ---
+                    # ถ้า day_data ไม่ว่าง (มีเคส) ให้ใช้สีเขียวอ่อน ถ้าไม่มีให้เป็นสีใส
+                    bg_color = "#d4edda" if not day_data.empty else "transparent"
+                    
+                    st.markdown(f"""
+                        <div style='background-color: {bg_color}; padding: 5px; border-radius: 5px; text-align: center;'>
+                            <strong>{day}</strong>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # โชว์ริบบิ้น
                     for _, row in day_data.iterrows():
-                        topic = str(row.iloc[1]) # คอลัมน์ B คือ Index 1
-                        st.caption(f"✅ {topic[:10]}...") # ตัดข้อความให้สั้นลง
+                        topic = str(row.iloc[1])
+                        st.caption(f"✅ {topic[:10]}...") 
+            else:
+                cols[i].write("")
     
-    # 4. ส่วนดูรายละเอียด (เมื่อกดเลือกหัวข้อ)
+    # 4. ส่วนดูรายละเอียด
     st.write("---")
     selected_topic = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", df.iloc[:, 1].unique())
     if selected_topic:
