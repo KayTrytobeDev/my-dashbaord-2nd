@@ -60,54 +60,53 @@ if menu == "📊 Dashboard":
 elif menu == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงาน")
 
-    # 1. เลือกเดือน/ปี
-    col1, col2 = st.columns(2)
-    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    with col2: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
-
-    # 2. กรองข้อมูลวันที่
-    df['Date_Obj'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+    # 1. จัดการวันที่แบบตรงไปตรงมา (ใช้คอลัมน์แรกเสมอ)
+    df['date_dt'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
     
-    # 3. สร้างปฏิทินเป็นตาราง HTML
+    # 2. เลือกเดือน/ปี (ใช้ตัวเลขตายตัวเพื่อความชัวร์ ไม่ต้องดึงจาก Dataframe)
+    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
+
+    # 3. วาด Grid ตาราง
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdayscalendar(year, month)
     
-    html = "<table style='width:100%; border-collapse:collapse; text-align:center;'>"
-    html += "<tr><th>อา</th><th>จ</th><th>อ</th><th>พ</th><th>พฤ</th><th>ศ</th><th>ส</th></tr>"
+    # วาดตารางแบบง่ายที่สุดด้วย st.columns
+    header = st.columns(7)
+    days_names = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
+    for i, h in enumerate(header): h.markdown(f"**{days_names[i]}**")
     
     for week in month_days:
-        html += "<tr>"
-        for day in week:
-            if day == 0:
-                html += "<td></td>"
+        cols = st.columns(7)
+        for i, day in enumerate(week):
+            if day != 0:
+                # ตรวจสอบว่าวันนี้มีเคสไหม
+                is_case = df[(df['date_dt'].dt.day == day) & 
+                             (df['date_dt'].dt.month == month) & 
+                             (df['date_dt'].dt.year == year)]
+                
+                # ถ้ามีเคสให้ทำสี Mark สีเขียว
+                bg = "#d4edda" if not is_case.empty else "#ffffff"
+                with cols[i]:
+                    st.markdown(f"""
+                        <div style='background-color:{bg}; border:1px solid #ddd; padding:5px; border-radius:5px; text-align:center;'>
+                            <strong>{day}</strong>
+                        </div>
+                    """, unsafe_allow_html=True)
             else:
-                # กรองข้อมูล
-                day_data = df[(df['Date_Obj'].dt.day == day) & 
-                              (df['Date_Obj'].dt.month == month) & 
-                              (df['Date_Obj'].dt.year == year)]
-                
-                # ถ้ามีเคส ให้เปลี่ยนสีพื้นหลังช่องเป็นสีเขียวอ่อน
-                bg_color = "#d4edda" if not day_data.empty else "#ffffff"
-                border = "2px solid #28a745" if not day_data.empty else "1px solid #ddd"
-                
-                html += f"""
-                    <td style='height:80px; vertical-align:top; border:{border}; background-color:{bg_color};'>
-                        <strong>{day}</strong><br>
-                        <span style='font-size:9px;'>{"• มีเคส" if not day_data.empty else ""}</span>
-                    </td>
-                """
-        html += "</tr>"
-    html += "</table>"
-    
-    st.markdown(html, unsafe_allow_html=True)
-    
-    # 4. ส่วนดูรายละเอียด
+                cols[i].write("")
+
+    # 4. เลือกหัวข้อเพื่อดูรายละเอียด (ใช้คอลัมน์ที่ 2)
     st.write("---")
-    selected_topic = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", df.iloc[:, 1].unique())
-    if selected_topic:
-        detail = df[df.iloc[:, 1] == selected_topic].iloc[0]
+    topic_list = df.iloc[:, 1].unique().tolist()
+    selected = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", topic_list)
+    
+    if selected:
+        case = df[df.iloc[:, 1] == selected].iloc[0]
         st.subheader("🔍 รายละเอียดเคส")
-        st.table(detail)
+        # ใช้ st.write เพื่อไม่ให้ติดปัญหาการแปลงข้อมูลตารางแบบเก่า
+        for col in df.columns:
+            st.write(f"**{col}:** {case[col]}")
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
