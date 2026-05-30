@@ -58,43 +58,45 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน")
+    st.title("📅 ปฏิทินติดตามงาน (Grid View)")
     
     # 1. เลือกเดือนปี
-    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    col_sel1, col_sel2 = st.columns(2)
+    with col_sel1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    with col_sel2: year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
     
-    # 2. ทำความสะอาดข้อมูลวันที่ให้ชัวร์ที่สุด
+    # 2. เตรียมข้อมูล
     df['Clean_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
-    
-    # --- TEST: แสดงข้อมูลดิบ ---
-    st.write("ข้อมูลที่โหลดมาได้ (เช็กว่ามีแถวในปฏิทินไหม):", df[['Clean_Date', df.columns[1]]].head(5))
-    
     cal = calendar.Calendar(firstweekday=6)
-    weeks = cal.monthdayscalendar(year, month)
+    month_days = cal.monthdayscalendar(year, month)
     
-    html = "<table style='width:100%; border-collapse:collapse;'>"
-    for w in weeks:
-        html += "<tr>"
-        for d in w:
-            if d == 0: 
-                html += "<td style='height:120px; border:1px solid #eee;'></td>"
-            else:
+    # 3. สร้าง Grid Header
+    days_name = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]
+    cols = st.columns(7)
+    for i, col in enumerate(cols):
+        col.write(f"**{days_name[i]}**")
+    
+    # 4. วาดปฏิทินแบบ Grid (Row by Row)
+    for week in month_days:
+        cols = st.columns(7)
+        for i, day in enumerate(week):
+            if day != 0:
                 # กรองข้อมูล
-                day_data = df[(df['Clean_Date'].dt.day == d) & 
+                day_data = df[(df['Clean_Date'].dt.day == day) & 
                               (df['Clean_Date'].dt.month == month) & 
                               (df['Clean_Date'].dt.year == year)]
                 
-                tags = ""
-                # ถ้ามีข้อมูล ให้วนลูปโชว์เลย
-                for _, r in day_data.iterrows():
-                    # r.iloc[1] คือคอลัมน์ที่ 2 (หัวข้อ) แน่นอน
-                    tags += f"<div style='background:green; color:white; font-size:10px; margin:1px; padding:2px;'>• {r.iloc[1]}</div>"
-                
-                html += f"<td style='height:120px; border:1px solid #eee; vertical-align:top;'><strong>{d}</strong><br>{tags}</td>"
-        html += "</tr>"
-    st.markdown(html + "</table>", unsafe_allow_html=True)
-
+                with cols[i]:
+                    st.markdown(f"**{day}**")
+                    # แสดงริบบิ้น (ถ้ามีข้อมูล)
+                    for _, row in day_data.iterrows():
+                        st.markdown(f"""
+                            <div style='background:#00cc96; color:white; font-size:9px; margin:1px; padding:3px; border-radius:3px;'>
+                            {row.iloc[1]}
+                            </div>
+                        """, unsafe_allow_html=True)
+            else:
+                cols[i].write("") # ช่องว่าง
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
