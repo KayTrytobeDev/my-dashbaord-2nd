@@ -105,40 +105,42 @@ elif menu == "📝 Report New Case":
     
     with st.form("risk_form", clear_on_submit=True):
         f_date = st.date_input("วันที่ (Date)")
-        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic/risk finding)")
+        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic)")
         f_location = st.text_input("สถานที่ (Location)")
-        f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
-        f_status = st.selectbox("สถานะ (Status)", ["ดำเนินการเรียบร้อย", "รอการดำเนินการ"])
-        f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
-        f_remark = st.text_input("หมายเหตุ (Remark)")
+        f_resp = st.text_input("ผู้รับผิดชอบ (Responsible)")
+        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "เรียบร้อย"])
+        f_action = st.text_area("แนวทางแก้ไข (Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
         
-        submitted = st.form_submit_button("🚀 บันทึกข้อมูลเข้า Google Sheet")
+        # เพิ่มส่วนอัปโหลดรูปภาพให้ตรงกับ doPost
+        file_before = st.file_uploader("รูปก่อนแก้ไข", type=["jpg", "png"])
+        file_after = st.file_uploader("รูปหลังแก้ไข", type=["jpg", "png"])
+        
+        submitted = st.form_submit_button("🚀 บันทึกข้อมูล")
         
         if submitted:
-            # ตรวจสอบว่าต้องมีหัวข้อถึงจะส่ง
-            if f_topic:
-                # สร้าง Payload ให้ตรงชื่อคอลัมน์ใน Google Sheet ของพี่
-                payload = {
-                    "Date": f_date.strftime("%Y-%m-%d"),
-                    "Topic/risk finding": f_topic,
-                    "Location": f_location,
-                    "Responsible Person": f_resp,
-                    "Status": f_status,
-                    "Corrective Action": f_action,
-                    "Remark": f_remark,
-                    "Risk Level": f_risk
-                }
-                
-                # ส่งข้อมูลไปที่ Web App
-                try:
-                    res = requests.post(API_URL, json=payload)
-                    if res.status_code == 200:
-                        st.success("✅ บันทึกข้อมูลลง Google Sheet สำเร็จ!")
-                        st.balloons()
-                    else:
-                        st.error(f"เกิดข้อผิดพลาดในการบันทึก: {res.status_code}")
-                except Exception as e:
-                    st.error(f"เชื่อมต่อ Web App ไม่ได้: {e}")
+            # เตรียมข้อมูลให้ตรงกับโครงสร้าง doPost ของพี่
+            payload = {
+                "date": f_date.strftime("%Y-%m-%d"),
+                "topic": f_topic,
+                "location": f_location,
+                "responsible": f_resp,
+                "status": f_status,
+                "action": f_action,
+                "risk": f_risk,
+                "imgBeforeBase64": "", "imgBeforeName": "", "imgBeforeType": "",
+                "imgAfterBase64": "", "imgAfterName": "", "imgAfterType": ""
+            }
+            
+            # แปลงรูปเป็น Base64 (ถ้ามีการเลือกไฟล์)
+            if file_before:
+                payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode()
+                payload["imgBeforeName"] = file_before.name
+                payload["imgBeforeType"] = file_before.type
+            
+            # ส่งข้อมูลไปที่ Google Apps Script
+            res = requests.post(API_URL, json=payload)
+            if res.status_code == 200:
+                st.success("บันทึกข้อมูลเรียบร้อย!")
             else:
-                st.warning("กรุณากรอกหัวข้อประเด็นความเสี่ยงด้วยครับ")
+                st.error("บันทึกไม่สำเร็จ")
