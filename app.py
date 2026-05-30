@@ -42,19 +42,47 @@ menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "�
 # ==========================================
 if menu == "📊 Dashboard":
     st.title("📊 สรุปภาพรวมความเสี่ยง")
+    
     if not df.empty:
-        c1, c2, c3 = st.columns(3)
-        c1.metric("📌 เคสทั้งหมด", len(df))
-        c2.metric("✅ สำเร็จ", len(df[df['Status'].str.contains('เรียบร้อย|สำเร็จ', na=False)]))
-        c3.metric("🚨 ความเสี่ยงสูง", len(df[df['Risk Level'] == 'High']))
+        # คำนวณข้อมูลเบื้องต้น
+        total_cases = len(df)
+        # ตรวจสอบชื่อคอลัมน์ในไฟล์พี่ให้ตรง (เช่น 'Status' หรือ 'สถานะ')
+        completed_cases = len(df[df['Status'].str.contains('เรียบร้อย|สำเร็จ', na=False)])
         
-        st.write("---")
-        # ใช้ .value_counts().reset_index() เพื่อให้เป็น DataFrame ที่ Plotly อ่านได้
-        risk_counts = df['Risk Level'].value_counts().reset_index()
-        risk_counts.columns = ['Risk', 'Count']
-        fig = px.bar(risk_counts, x='Risk', y='Count', color='Risk',
-                     color_discrete_map={'High': '#ff4b4b', 'Medium': '#ffa500', 'Low': '#00cc96'})
-        st.plotly_chart(fig, use_container_width=True)
+        # 1. แสดงตัวเลข Metric เด่นๆ
+        col1, col2, col3 = st.columns(3)
+        col1.metric("📌 เคสทั้งหมด", total_cases)
+        col2.metric("✅ ดำเนินการสำเร็จ", completed_cases)
+        col3.metric("🚨 เคสความเสี่ยงสูง", len(df[df['Risk Level'] == 'High']))
+        
+        st.markdown("---")
+        
+        # 2. จัดวางกราฟ 2 ฝั่ง (สถานะ vs ความเสี่ยง)
+        c1, c2 = st.columns(2)
+        
+        with c1:
+            st.subheader("สัดส่วนสถานะการดำเนินงาน")
+            # ใช้ value_counts() แล้วแปลงเป็น DataFrame ให้ Plotly อ่านง่าย
+            status_df = df['Status'].value_counts().reset_index()
+            status_df.columns = ['Status', 'Count']
+            fig_pie = px.pie(status_df, values='Count', names='Status', hole=0.4, 
+                             color_discrete_sequence=px.colors.qualitative.Pastel)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
+        with c2:
+            st.subheader("ระดับความเสี่ยง (Risk Level)")
+            # เรียงลำดับ Low -> Medium -> High ก่อนแสดงผล
+            risk_df = df['Risk Level'].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
+            risk_df.columns = ['Risk', 'Count']
+            fig_bar = px.bar(risk_df, x='Risk', y='Count', color='Risk',
+                             color_discrete_map={'High': '#ff4b4b', 'Medium': '#ffa500', 'Low': '#00cc96'})
+            st.plotly_chart(fig_bar, use_container_width=True)
+            
+        # 3. ตารางข้อมูลย่อ
+        st.subheader("รายการล่าสุด")
+        st.dataframe(df.head(5), use_container_width=True)
+    else:
+        st.warning("⚠️ ยังไม่มีข้อมูลโหลดเข้ามาในระบบ")
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
