@@ -59,47 +59,16 @@ if menu == "📊 Dashboard":
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงาน")
-
-    # 1. จัดการวันที่ (ใช้วิธีเรียกคอลัมน์แรกแบบตรงๆ)
-    df['date_temp'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
     
-    # 2. เลือกเดือน/ปี (เอาแบบง่ายที่สุด ไม่ต้องดึงจาก DataFrame ให้ Error)
-    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    year = st.selectbox("เลือกปี (ค.ศ.)", [2025, 2026, 2027], index=1)
+    # [เช็กข้อมูล]
+    st.write("จำนวนแถวที่ดึงได้จาก Sheet:", len(df))
+    st.write("ตัวอย่างข้อมูลที่ดึงได้:", df.head()) # ถ้าตรงนี้ขึ้นว่างเปล่า แสดงว่าดึงข้อมูลไม่สำเร็จ
     
-    # 3. วาด Grid 
-    cal = calendar.Calendar(firstweekday=6)
-    month_days = cal.monthdayscalendar(year, month)
-    
-    cols = st.columns(7)
-    for i, name in enumerate(["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]):
-        cols[i].markdown(f"**{name}**")
-    
-    for week in month_days:
-        cols = st.columns(7)
-        for i, day in enumerate(week):
-            if day != 0:
-                with cols[i]:
-                    # กรองข้อมูลวันนี้
-                    day_data = df[(df['date_temp'].dt.day == day) & 
-                                  (df['date_temp'].dt.month == month) & 
-                                  (df['date_temp'].dt.year == year)]
-                    
-                    # ถ้ามีเคสให้โชว์เป็นปุ่ม
-                    if not day_data.empty:
-                        if st.button(f"📅 {day}", key=f"d_{day}_{week}"):
-                            st.session_state.clicked_day = day
-                    else:
-                        st.write(f"{day}")
-    
-    # 4. เมื่อกดปุ่ม ให้แสดงรายละเอียดของวันนั้น
-    if 'clicked_day' in st.session_state:
-        d = st.session_state.clicked_day
-        st.write(f"### รายละเอียดวันที่ {d}")
-        day_data = df[(df['date_temp'].dt.day == d) & 
-                      (df['date_temp'].dt.month == month) & 
-                      (df['date_temp'].dt.year == year)]
-        st.table(day_data)
+    # หากข้อมูลขึ้นที่นี่ แต่ในปฏิทินไม่ขึ้น แสดงว่าตัวกรองวันที่ผิด
+    # ให้ลองแก้ตรงนี้:
+    # เปลี่ยนจากการกรองด้วยวันที่ เป็นการแสดงรายการทั้งหมดไปก่อน
+    st.subheader("รายการทั้งหมดที่มีในระบบ")
+    st.table(df)
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
