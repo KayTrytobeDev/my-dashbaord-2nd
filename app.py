@@ -58,33 +58,51 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินและรายละเอียดเคส")
+    st.title("📅 ปฏิทินติดตามงาน")
     
-    # ดึงค่าปี ค.ศ. ให้ถูกต้อง (พ.ศ. - 543)
-    target_month = list(calendar.month_name).index(month_str) if 'month_str' in locals() else datetime.now().month
-    # ... (ส่วนเลือก เดือน/ปี) ...
-
-    # กรองเฉพาะแถวที่วันที่ไม่เป็นว่างเปล่า
-    df_clean = df.dropna(subset=['Parsed_Date'])
+    # 1. เลือกเดือนและปี
+    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
     
-    # วาดปฏิทิน
-    # ... (ลูปวันในสัปดาห์) ...
-    
-    # จุดสำคัญ: การดึงข้อมูลต้องกรองแบบปลอดภัย
-    day_data = df_clean[
-        (df_clean['Parsed_Date'].dt.day == d) & 
-        (df_clean['Parsed_Date'].dt.month == month) & 
-        (df_clean['Parsed_Date'].dt.year == year)
-    ]
-    
-    # แสดงริบบิ้น (Tags)
-    for _, r in day_data.iterrows():
-        st.markdown(f"""
-            <div style='background-color: #00cc96; color: white; padding: 2px; margin-bottom: 2px; 
-            border-radius: 4px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>
-            • {r['Topic/risk finding']}
-            </div>
-        """, unsafe_allow_html=True)
+    # 2. ตรวจสอบข้อมูลก่อนแสดงผล (เช็กชื่อคอลัมน์)
+    if df.empty:
+        st.warning("ไม่พบข้อมูลในระบบ")
+    else:
+        # บรรทัดนี้ช่วยเช็กว่าคอลัมน์ที่เราเรียกมีอยู่จริงไหม
+        expected_col = 'Topic/risk finding'
+        if expected_col not in df.columns:
+            st.error(f"ไม่พบชื่อคอลัมน์ '{expected_col}' ในฐานข้อมูล! ข้อมูลที่พบคือ: {list(df.columns)}")
+        else:
+            # 3. วาดปฏิทิน
+            cal = calendar.Calendar(firstweekday=6)
+            weeks = cal.monthdayscalendar(year, month)
+            html = "<table style='width:100%; border-collapse:collapse; border:1px solid #ddd;'>"
+            for w in weeks:
+                html += "<tr>"
+                for d in w:
+                    if d == 0: 
+                        html += "<td style='height:120px; border:1px solid #eee;'></td>"
+                    else:
+                        # กรองข้อมูลรายวัน
+                        day_data = df[
+                            (df['Parsed_Date'].dt.day == d) & 
+                            (df['Parsed_Date'].dt.month == month) & 
+                            (df['Parsed_Date'].dt.year == year)
+                        ]
+                        
+                        tags = ""
+                        for _, r in day_data.iterrows():
+                            # ดึงค่าหัวข้อ
+                            topic = r[expected_col]
+                            # ใส่สีริบบิ้นตามความเสี่ยง (ถ้ามีคอลัมน์ Risk Level)
+                            risk = str(r.get('Risk Level', 'Low')).lower()
+                            color = "#ff4b4b" if 'high' in risk else ("#ffa500" if 'medium' in risk else "#00cc96")
+                            
+                            tags += f"<div style='background:{color}; color:white; font-size:10px; margin:2px; padding:2px; border-radius:3px;'>• {topic}</div>"
+                        
+                        html += f"<td style='height:120px; border:1px solid #eee; vertical-align:top;'><strong>{d}</strong><br>{tags}</td>"
+                html += "</tr>"
+            st.markdown(html + "</table>", unsafe_allow_html=True)
 
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
