@@ -59,21 +59,32 @@ if menu == "📊 Dashboard":
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินและรายละเอียดเคส")
-    month = st.selectbox("เดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    year = st.selectbox("ปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
     
-    weeks = calendar.Calendar(firstweekday=6).monthdayscalendar(year, month)
-    html = "<table style='width:100%; border-collapse:collapse; border:1px solid #ddd;'>"
-    for w in weeks:
-        html += "<tr>"
-        for d in w:
-            if d == 0: html += "<td style='height:100px; border:1px solid #eee;'></td>"
-            else:
-                day_data = df[(df['Parsed_Date'].dt.day == d) & (df['Parsed_Date'].dt.month == month) & (df['Parsed_Date'].dt.year == year)]
-                tags = "".join([f"<div style='background:#00cc96; color:white; font-size:10px; margin:2px; padding:2px;'>• {r['Topic/risk finding']}</div>" for _, r in day_data.iterrows()])
-                html += f"<td style='height:100px; border:1px solid #eee; vertical-align:top;'><strong>{d}</strong><br>{tags}</td>"
-        html += "</tr>"
-    st.markdown(html + "</table>", unsafe_allow_html=True)
+    # ดึงค่าปี ค.ศ. ให้ถูกต้อง (พ.ศ. - 543)
+    target_month = list(calendar.month_name).index(month_str) if 'month_str' in locals() else datetime.now().month
+    # ... (ส่วนเลือก เดือน/ปี) ...
+
+    # กรองเฉพาะแถวที่วันที่ไม่เป็นว่างเปล่า
+    df_clean = df.dropna(subset=['Parsed_Date'])
+    
+    # วาดปฏิทิน
+    # ... (ลูปวันในสัปดาห์) ...
+    
+    # จุดสำคัญ: การดึงข้อมูลต้องกรองแบบปลอดภัย
+    day_data = df_clean[
+        (df_clean['Parsed_Date'].dt.day == d) & 
+        (df_clean['Parsed_Date'].dt.month == month) & 
+        (df_clean['Parsed_Date'].dt.year == year)
+    ]
+    
+    # แสดงริบบิ้น (Tags)
+    for _, r in day_data.iterrows():
+        st.markdown(f"""
+            <div style='background-color: #00cc96; color: white; padding: 2px; margin-bottom: 2px; 
+            border-radius: 4px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>
+            • {r['Topic/risk finding']}
+            </div>
+        """, unsafe_allow_html=True)
 
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
