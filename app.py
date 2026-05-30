@@ -37,36 +37,51 @@ menu = st.sidebar.radio("เมนู:", ["📊 Dashboard", "📅 Calendar & Cas
 if menu == "Dashboard":
     st.title("📊 Risk Management Overview")
     
-    # ดึงข้อมูลจาก Index ที่ถูกต้อง (อ้างอิงจากภาพที่พี่ส่งมา)
-    # Status อยู่ Column ที่ 6 (Index 5), Risk อยู่ Column ที่ 9 (Index 8)
+    # 1. ข้อมูลสรุปตัวเลข (KPIs)
+    # อ้างอิง Index คอลัมน์จากข้อมูลล่าสุด
     total_cases = len(df)
     completed_cases = len(df[df.iloc[:, 5] == 'ดำเนินการเรียบร้อย'])
     high_risk_cases = len(df[df.iloc[:, 8] == 'High'])
     
-    # 1. Metric Cards
-    m1, m2, m3 = st.columns(3)
-    m1.metric("📌 จำนวนเคสทั้งหมด", total_cases)
-    m2.metric("✅ สำเร็จแล้ว", completed_cases)
-    m3.metric("🚨 ความเสี่ยงสูง", high_risk_cases)
+    # แสดงตัวเลขแบบ Metric
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📌 เคสทั้งหมด", total_cases)
+    col2.metric("✅ ดำเนินการสำเร็จ", completed_cases)
+    col3.metric("🚨 ความเสี่ยงสูง (High)", high_risk_cases)
     
-    st.write("---")
+    st.markdown("---")
     
-    # 2. กราฟสรุป
+    # 2. กราฟสรุป (แบ่ง 2 ฝั่ง)
     c1, c2 = st.columns(2)
     
     with c1:
         st.subheader("สถานะการดำเนินงาน")
+        # กราฟวงกลมแสดงสัดส่วนสถานะ
         status_counts = df.iloc[:, 5].value_counts()
-        fig_pie = px.pie(values=status_counts.values, names=status_counts.index, hole=0.4)
+        fig_pie = px.pie(
+            values=status_counts.values, 
+            names=status_counts.index, 
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.RdBu
+        )
         st.plotly_chart(fig_pie, use_container_width=True)
         
     with c2:
-        st.subheader("ระดับความเสี่ยง")
+        st.subheader("ระดับความเสี่ยง (Risk Level)")
+        # กราฟแท่งแสดงจำนวนเคสแยกตามความเสี่ยง
         risk_counts = df.iloc[:, 8].value_counts()
-        fig_bar = px.bar(x=risk_counts.index, y=risk_counts.values, 
-                         color=risk_counts.index,
-                         color_discrete_map={'Low': '#00cc96', 'Medium': '#ffa500', 'High': '#ff4b4b'})
+        fig_bar = px.bar(
+            x=risk_counts.index, 
+            y=risk_counts.values, 
+            color=risk_counts.index,
+            color_discrete_map={'Low': '#00cc96', 'Medium': '#ffa500', 'High': '#ff4b4b'}
+        )
+        fig_bar.update_layout(showlegend=False)
         st.plotly_chart(fig_bar, use_container_width=True)
+
+    # 3. ตารางข้อมูลดิบสำหรับดูภาพรวม
+    st.subheader("รายการเคสล่าสุด")
+    st.dataframe(df.head(10), use_container_width=True) # โชว์ 10 แถวแรก
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
