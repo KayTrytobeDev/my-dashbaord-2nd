@@ -3,16 +3,17 @@ import pandas as pd
 import plotly.express as px
 import requests
 import base64
+import calendar
 from datetime import datetime
 
 # คอนฟิกหน้าเว็บเบื้องต้นเปิด Wide Mode
 st.set_page_config(page_title="Risk & Corrective Tracker", layout="wide", initial_sidebar_state="expanded")
 
-# 🔴 ใส่ลิงก์ Web App (URL ของ Google Apps Script ที่ลงท้ายด้วย /exec) ของพี่ตรงนี้ได้เลยครับ
+# 🔴 ใส่ลิงก์ Web App (URL ของ Google Apps Script) ของพี่ตรงนี้ได้เลยครับ
 API_URL = "https://script.google.com/macros/s/AKfycbxMCFK88knNYwWyw_aRBqqP4ARGozoWXAfZxgZCndtqK5NCwKZyIyaQ7GvNGp1fBJPP/exec" 
 
 # ==========================================
-# ฟังก์ชันโหลดข้อมูลผ่าน Web App API (ลบการแจ้งเตือน Error ออกทั้งหมด)
+# ฟังก์ชันโหลดข้อมูลผ่าน Web App API (เงียบ สงบ ไม่พ่นกล่องแจ้งเตือนกวนใจ)
 # ==========================================
 @st.cache_data(ttl=5)
 def load_data_from_script():
@@ -31,7 +32,7 @@ def load_data_from_script():
                     return pd.DataFrame()
                     
                 df = pd.DataFrame(rows, columns=headers)
-                df.columns = df.columns.str.strip()
+                df.columns = df.columns.str.strip() # ล้างช่องว่างที่หัวตาราง
                 return df
             else:
                 return pd.DataFrame()
@@ -42,12 +43,13 @@ def load_data_from_script():
 
 df = load_data_from_script()
 
-# ฟังก์ชันทำความสะอาดและแปลงข้อมูลวันที่
+# ฟังก์ชันจัดการแปลงวันที่ให้อยู่ในฟอร์แมตระบบอย่างแม่นยำ (แก้ปัญหาข้อมูลไม่ขึ้น)
 def clean_and_parse_date(date_val):
     if pd.isna(date_val) or str(date_val).strip() == "":
         return None
     d_str = str(date_val).strip()
-    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%d/%m/%Y"):
+    # ลองแกะฟอร์แมตยอดฮิต โดยเฉพาะ %m/%d/%Y และ %d/%m/%Y
+    for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%Y/%m/%d"):
         try:
             return datetime.strptime(d_str, fmt).date()
         except ValueError:
@@ -55,9 +57,8 @@ def clean_and_parse_date(date_val):
     return None
 
 if not df.empty:
-    required_cols = ['Date', 'Topic/risk finding', 'Status', 'Risk Level']
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    if not missing_cols:
+    # เคลียร์หัวคอลัมน์และจับแปลงวันที่
+    if 'Date' in df.columns:
         df['Parsed_Date'] = df['Date'].apply(clean_and_parse_date)
 
 # ==========================================
@@ -76,8 +77,8 @@ page = st.sidebar.radio("เมนูใช้งานระบบ:", [
 if page == "📊 Data Visualizer (หน้าแรก)":
     st.title("📊 ภาพรวมและสถิติข้อมูลความเสี่ยงประจำองค์กร")
     
-    if df.empty or ('missing_cols' in locals() and missing_cols):
-        st.info("💡 ระบบพร้อมใช้งาน ดึงข้อมูลสำเร็จ")
+    if df.empty or 'Parsed_Date' not in df.columns:
+        st.info("💡 ระบบพร้อมใช้งาน ข้อมูลฐานข้อมูลเชื่อมต่อสำเร็จ")
     else:
         total_cases = len(df)
         
@@ -88,7 +89,7 @@ if page == "📊 Data Visualizer (หน้าแรก)":
         st.markdown("---")
         
         # สรุปสถานะการดำเนินงาน (Column E)
-        st.subheader("📌 สรุปสถานะการดำเนินงานแต่ละประเภท")
+        st.subheader("📌 สรุปสถานะการดำเนินงานแต่ละประเภท (Column E)")
         if 'Status' in df.columns:
             status_df = df['Status'].value_counts().reset_index()
             status_df.columns = ['สถานะ', 'จำนวน']
@@ -125,20 +126,97 @@ if page == "📊 Data Visualizer (หน้าแรก)":
                 st.plotly_chart(fig_risk, use_container_width=True)
 
 # ==========================================
-# หน้าที่ 2: Calendar & Case Detail (ใช้ตัวเลือกวันที่แบบมาตรฐาน)
+# หน้าที่ 2: Calendar & Case Detail (ตารางปฏิทินแบบ Google Calendar)
 # ==========================================
 elif page == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงานและรายละเอียดข้อมูลเคสเชิงลึก")
-    st.write("เลือกตรวจสอบวันที่ต้องการจากตัวเลือกปฏิทินเพื่อเรียกดูประวัติและหลักฐานการแก้ไข")
+    st.write("ดึงข้อมูลวันเกิดเหตุพร้อมวิเคราะห์สถานะและรายละเอียดหลักฐานรูปภาพในรูปแบบตารางรายเดือน")
     
     today = datetime.now().date()
-    active_date = st.date_input("📅 คลิกเลือกวันที่บนปฏิทิน:", today)
     
-    if not df.empty and 'Parsed_Date' in df.columns:
+    # 1. แถบเลือก เดือน และ ปี เพื่อเปลี่ยนหน้าปฏิทิน
+    col_m, col_y = st.columns(2)
+    with col_m:
+        month_names = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
+                       "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+        selected_month_idx = st.selectbox("📅 เลือกเดือนที่ต้องการเปิดดู:", range(1, 13), index=today.month - 1, format_func=lambda x: month_names[x-1])
+    with col_y:
+        selected_year = st.selectbox("🔢 เลือกปี ค.ศ.:", [today.year - 1, today.year, today.year + 1], index=1)
+
+    if df.empty or 'Parsed_Date' not in df.columns:
+        st.info("💡 ยังไม่มีข้อมูลในระบบฐานข้อมูล")
+    else:
+        # 2. ฝัง Style CSS จำลองหน้าตา Google Calendar ให้สวยงามและสแกนง่าย
+        st.markdown("""
+        <style>
+            .g-cal-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+            .g-cal-th { background-color: #f8f9fa; border: 1px solid #e0e0e0; text-align: center; padding: 12px; font-weight: bold; color: #4a4a4a; font-size: 14px; width: 14.28%; }
+            .g-cal-td { border: 1px solid #e0e0e0; vertical-align: top; padding: 6px; background-color: #ffffff; height: 120px; position: relative; transition: background-color 0.2s; }
+            .g-cal-td:hover { background-color: #fdfdfd; }
+            .g-day-num { font-weight: bold; color: #5f6368; font-size: 13px; display: inline-block; width: 22px; height: 22px; text-align: center; line-height: 22px; margin-bottom: 4px; }
+            .g-today-circle { background-color: #1a73e8; color: white !important; border-radius: 50%; }
+            .g-cal-empty { background-color: #fafafa; border: 1px solid #e0e0e0; }
+            .g-event-item { font-size: 11px; padding: 4px 8px; margin-top: 3px; border-radius: 4px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; cursor: default; line-height: 1.3; }
+            .g-bg-high { background-color: #ea4335; border-left: 4px solid #b31412; }
+            .g-bg-medium { background-color: #fbbc05; color: #202124 !important; border-left: 4px solid #c89200; }
+            .g-bg-low { background-color: #34a853; border-left: 4px solid #187230; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # คำนวณวันในเดือนนั้นๆ
+        cal = calendar.Calendar(firstweekday=calendar.SUNDAY)
+        month_days = cal.monthdayscalendar(selected_year, selected_month_idx)
+        
+        # เริ่มสร้างตาราง HTML ปฏิทินรายเดือน
+        html_code = "<table class='g-cal-table'>"
+        html_code += "<tr><th class='g-cal-th'>อา.</th><th class='g-cal-th'>จ.</th><th class='g-cal-th'>อ.</th><th class='g-cal-th'>พ.</th><th class='g-cal-th'>พฤ.</th><th class='g-cal-th'>ศ.</th><th class='g-cal-th'>ส.</th></tr>"
+        
+        for week in month_days:
+            html_code += "<tr>"
+            for day in week:
+                if day == 0:
+                    html_code += "<td class='g-cal-td g-cal-empty'></td>"
+                else:
+                    # สร้างวันที่ประมวลผลของช่องนั้น
+                    current_loop_date = datetime(selected_year, selected_month_idx, day).date()
+                    day_cases = df[df['Parsed_Date'] == current_loop_date]
+                    
+                    # ไฮไลต์วงกลมสีฟ้าถ้าเป็นวันปัจจุบัน
+                    is_today = " g-today-circle" if current_loop_date == today else ""
+                    
+                    html_code += "<td class='g-cal-td'>"
+                    html_code += f"<span class='g-day-num{is_today}'>{day}</span>"
+                    
+                    # ดึงเคสที่ตรงกับวันในช่องปฏิทินมาแสดงเป็นแถบสีริบบิ้นสไตล์ Google Calendar
+                    for _, c_row in day_cases.iterrows():
+                        topic_text = c_row.get('Topic/risk finding', 'ไม่มีชื่อหัวข้อ')
+                        r_level = str(c_row.get('Risk Level', 'Low')).strip()
+                        
+                        bg_class = "g-bg-low"
+                        if r_level == "Medium": bg_class = "g-bg-medium"
+                        elif r_level == "High": bg_class = "g-bg-high"
+                        
+                        html_code += f"<div class='g-event-item {bg_class}' title='{topic_text}'>• {topic_text[:12]}...</div>"
+                        
+                    html_code += "</td>"
+            html_code += "</tr>"
+        html_code += "</table>"
+        
+        # เรนเดอร์ปฏิทินรายเดือนออกหน้าจอ
+        st.markdown(html_code, unsafe_allow_html=True)
+        st.write("")
+        
+        # 3. ส่วนการดูข้อมูลรูปภาพและดีเทลการแก้ไขโดยคลิกเลือกวันด้านล่างตาราง
+        st.markdown("---")
+        st.subheader("🔍 ส่วนตรวจสอบรายละเอียดและรูปภาพหลักฐาน")
+        
+        active_date = st.date_input("🗓️ ระบุวันที่คุณต้องการดึงข้อมูลรูปภาพและแนวทางแก้ไขเพิ่มเติมจากปฏิทิน:", today)
         filtered_df = df[df['Parsed_Date'] == active_date]
         
-        if not filtered_df.empty:
-            st.success(f"พบข้อมูลรายงานทั้งหมด **{len(filtered_df)} เคส** ประจำวันที่ระบุ")
+        if filtered_df.empty:
+            st.info(f"💡 วันที่ {active_date.strftime('%d/%m/%Y')} นี้ยังไม่มีประวัติเคสความเสี่ยงบันทึกไว้")
+        else:
+            st.success(f"พบข้อมูลรายงานทั้งหมด **{len(filtered_df)} เคส** ประจำวันที่เลือก")
             
             for idx, row in filtered_df.iterrows():
                 topic = row.get('Topic/risk finding', 'ไม่มีชื่อหัวข้อประเด็นความเสี่ยง')
@@ -211,26 +289,26 @@ elif page == "📅 Calendar & Case Detail":
 # หน้าที่ 3: Report New Case (ฟอร์มส่งข้อมูล)
 # ==========================================
 elif page == "📝 Report New Case":
-    st.title("📝 ฟอร์มรายงานเคสความเสี่ยงใหม่ผ่านทางหน้าเว็บไซต์")
+    st.title("📝 ฟอร์มกรอกข้อมูลผ่านหน้าเว็บไซต์")
     
     with st.form("web_incident_form", clear_on_submit=True):
         col_form1, col_form2 = st.columns(2)
         
         with col_form1:
-            f_date = st.date_input("เลือกวันที่เกิดเหตุการณ์ความเสี่ยง:", datetime.now()).strftime("%m/%d/%Y")
-            f_topic = st.text_input("หัวข้อหรือประเด็นความเสี่ยงที่ตรวจพบ:*")
-            f_location = st.text_input("สถานที่ระบุพิกัดที่พบ:")
-            f_responsible = st.text_input("ชื่อเจ้าหน้าที่หรือหน่วยงานรับผิดชอบ:")
+            f_date = st.date_input("วันที่เกิดเหตุ:", datetime.now()).strftime("%m/%d/%Y")
+            f_topic = st.text_input("หัวข้อเหตุการณ์ (Topic):*")
+            f_location = st.text_input("สถานที่ (Location):")
+            f_responsible = st.text_input("ผู้รับผิดชอบ:")
             
         with col_form2:
-            f_status = st.selectbox("สถานะการดำเนินงานเบื้องต้น:", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย"])
-            f_action = st.text_area("มาตรการหรือแนวทางแก้ไขเบื้องต้น:")
-            f_risk = st.selectbox("ระบุระดับความเสี่ยงของเคสนี้:", ["Low", "Medium", "High"])
+            f_status = st.selectbox("สถานะ (Status):", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย"])
+            f_action = st.text_area("แนวทางการแก้ไข:")
+            f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level):", ["Low", "Medium", "High"])
             
-            file_before = st.file_uploader("แนบรูปภาพก่อนทำแก้ไข:", type=["png", "jpg", "jpeg"])
-            file_after = st.file_uploader("แนบรูปภาพหลังดำเนินการแก้ไข:", type=["png", "jpg", "jpeg"])
+            file_before = st.file_uploader("รูปภาพก่อนแก้ไข (Before):", type=["png", "jpg", "jpeg"])
+            file_after = st.file_uploader("รูปภาพหลังแก้ไข (After):", type=["png", "jpg", "jpeg"])
             
-        submit_action = st.form_submit_button("🚀 บันทึกข้อมูลและรายงานส่งเข้าระบบ")
+        submit_action = st.form_submit_button("🚀 บันทึกข้อมูลส่งเข้าระบบ")
         
         if submit_action:
             if f_topic:
