@@ -1,12 +1,8 @@
 import streamlit as st
 import pandas as pd
 import requests
-import calendar
-from datetime import datetime
-import plotly.express as px
-import base64
 
-st.set_page_config(page_title="Risk Tracker System", layout="wide")
+st.set_page_config(page_title="Debug Mode", layout="wide")
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 @st.cache_data(ttl=5)
@@ -19,48 +15,26 @@ def load_data():
             df.columns = df.columns.str.strip()
             return df
         return pd.DataFrame()
-    except: return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
 
 df = load_data()
+
+st.title("🔍 โหมดตรวจสอบโครงสร้างข้อมูล")
+
 if not df.empty:
-    df['date_dt'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
-
-# --- เมนู Sidebar ---
-menu = st.sidebar.radio("เมนู:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
-
-# ==========================================
-# 1. DASHBOARD
-# ==========================================
-if menu == "📊 Dashboard":
-    st.title("📊 Risk Management Overview")
+    st.success(f"โหลดข้อมูลได้แล้ว! มีทั้งหมด {len(df)} แถว")
     
-    if not df.empty:
-        total_cases = len(df)
-        completed_cases = len(df[df.iloc[:, 5] == 'ดำเนินการเรียบร้อย'])
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("📌 เคสทั้งหมด", total_cases)
-        col2.metric("✅ ดำเนินการสำเร็จ", completed_cases)
-        col3.metric("🚨 เคสเสี่ยงสูง", len(df[df.iloc[:, 8] == 'High']))
-        
-        st.markdown("---")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("สถานะการดำเนินงาน")
-            status_counts = df.iloc[:, 5].value_counts()
-            fig_pie = px.pie(values=status_counts.values, names=status_counts.index, hole=0.4)
-            st.plotly_chart(fig_pie, use_container_width=True)
-            
-        with c2:
-            st.subheader("ระดับความเสี่ยง")
-            # แก้ปัญหา TypeError โดยไม่กำหนด map ตายตัว แต่ให้ Plotly จัดสีอัตโนมัติ
-            risk_counts = df.iloc[:, 8].value_counts().reset_index()
-            risk_counts.columns = ['Risk', 'Count']
-            fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk')
-            st.plotly_chart(fig_bar, use_container_width=True)
-    else:
-        st.info("กำลังโหลดข้อมูล...")
+    # 1. แสดงชื่อคอลัมน์ทั้งหมด (เพื่อที่เราจะได้เรียกชื่อถูก แทนการเดา index)
+    st.subheader("ชื่อคอลัมน์ที่โปรแกรมเห็น (Copy อันนี้มาบอกผมครับ)")
+    st.write(df.columns.tolist())
+    
+    # 2. แสดงตัวอย่างข้อมูล
+    st.subheader("ตัวอย่างข้อมูล 3 แถวแรก")
+    st.dataframe(df.head(3))
+else:
+    st.warning("ยังไม่มีข้อมูลโหลดเข้ามา โปรดเช็ก API_URL หรือการเชื่อมต่อ")
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
