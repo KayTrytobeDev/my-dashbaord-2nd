@@ -30,19 +30,56 @@ if not df.empty:
     # 1. โชว์ชื่อคอลัมน์ทั้งหมด
     st.write("### รายชื่อคอลัมน์ที่ระบบอ่านได้:")
     st.write(df.columns.tolist())
+    import streamlit as st
+import pandas as pd
+import requests
+from datetime import datetime
+
+st.set_page_config(layout="wide")
+
+# 🔴 ใส่ลิงก์ Web App ของพี่ที่นี่
+API_URL = "ใส่ลิงก์ของคุณที่นี่"
+
+@st.cache_data(ttl=5)
+def load_data_from_script():
+    try:
+        response = requests.get(API_URL)
+        if response.status_code == 200:
+            data = response.json()
+            if len(data) > 1:
+                return pd.DataFrame(data[1:], columns=data[0])
+        return pd.DataFrame()
+    except:
+        return pd.DataFrame()
+
+df = load_data_from_script()
+
+# ฟังก์ชันแปลงวันที่ พ.ศ. เป็น ค.ศ. แบบแม่นยำ
+def parse_thai_date(val):
+    try:
+        # ตัดเอาแค่ส่วนวันที่ (เช่น 2569-01-13)
+        date_str = str(val).split('T')[0]
+        y, m, d = map(int, date_str.split('-'))
+        # ถ้าปีเป็น พ.ศ. (เกิน 2400) ให้ลบ 543
+        if y > 2400:
+            y -= 543
+        return datetime(y, m, d).date()
+    except:
+        return None
+
+if not df.empty:
+    # แปลงคอลัมน์ "Date" (คอลัมน์แรก)
+    df['Parsed_Date'] = df.iloc[:, 0].apply(parse_thai_date)
     
-    # 2. โชว์ข้อมูลดิบๆ ในคอลัมน์ที่น่าจะเป็นวันที่ (เช่นคอลัมน์แรก)
-    st.write("### ข้อมูล 5 แถวแรกในคอลัมน์แรก (ลองเช็กดูว่าคือวันที่ใช่ไหม):")
-    st.write(df.iloc[:, 0].head())
+    # เช็กดูว่าแปลงสำเร็จไหม
+    success_count = df['Parsed_Date'].notna().sum()
+    st.write(f"✅ แปลงวันที่สำเร็จ {success_count} รายการ จากทั้งหมด {len(df)} รายการ")
     
-    # 3. ลองพยายามแปลงให้ดู
-    st.write("### ทดสอบแปลงวันที่ (ตัวอย่าง):")
-    def try_parse(val):
-        return pd.to_datetime(val, errors='coerce')
-    
-    test_df = df.iloc[:, 0].apply(try_parse)
-    st.write(test_df.head())
-    
-    st.info("💡 พี่ครับ: ถ้าตารางด้านบนคอลัมน์แรกไม่ใช่วันที่ หรือช่องแปลงวันที่เป็น NaT (ว่างเปล่า) แสดงว่าต้องเปลี่ยนคอลัมน์ที่ดึงครับ")
+    # ถ้าสำเร็จแล้ว ให้โชว์ตัวอย่าง
+    if success_count > 0:
+        st.write("ตัวอย่างข้อมูลที่แปลงแล้ว:")
+        st.write(df[['Date', 'Parsed_Date']].head())
+    else:
+        st.error("ยังแปลงวันที่ไม่สำเร็จ รบกวนดู Format ในชีตอีกทีครับ")
 else:
-    st.error("ยังไม่สามารถดึงข้อมูลได้ รบกวนเช็ก URL Web App ครับ")
+    st.info("กำลังโหลดข้อมูล...")
