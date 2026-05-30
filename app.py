@@ -60,43 +60,47 @@ if menu == "📊 Dashboard":
 elif menu == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงาน")
 
-    # 1. จัดการวันที่แบบตรงไปตรงมา (ใช้คอลัมน์แรกเสมอ)
+    # 1. จัดการวันที่ (ใช้คอลัมน์แรก)
     df['date_dt'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
     
-    # 2. เลือกเดือน/ปี (ใช้ตัวเลขตายตัวเพื่อความชัวร์ ไม่ต้องดึงจาก Dataframe)
-    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
+    # 2. เลือกเดือน/ปี
+    col_a, col_b = st.columns(2)
+    with col_a: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    with col_b: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
 
-    # 3. วาด Grid ตาราง
+    # 3. สร้าง Grid ปฏิทิน
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdayscalendar(year, month)
     
-    # วาดตารางแบบง่ายที่สุดด้วย st.columns
+    # วาดหัวตาราง
     header = st.columns(7)
-    days_names = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
-    for i, h in enumerate(header): h.markdown(f"**{days_names[i]}**")
+    for i, name in enumerate(["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]):
+        header[i].markdown(f"**{name}**")
     
+    # วาดตาราง Grid และใส่สี
     for week in month_days:
         cols = st.columns(7)
         for i, day in enumerate(week):
             if day != 0:
-                # ตรวจสอบว่าวันนี้มีเคสไหม
-                is_case = df[(df['date_dt'].dt.day == day) & 
+                # กรองข้อมูลของวันนั้นๆ
+                day_data = df[(df['date_dt'].dt.day == day) & 
                              (df['date_dt'].dt.month == month) & 
                              (df['date_dt'].dt.year == year)]
                 
-                # ถ้ามีเคสให้ทำสี Mark สีเขียว
-                bg = "#d4edda" if not is_case.empty else "#ffffff"
+                # ถ้ามีเคสให้สีเป็นเขียวอ่อน (#d4edda) ถ้าไม่มีให้เป็นสีขาว (#ffffff)
+                bg_color = "#d4edda" if not day_data.empty else "#ffffff"
+                border_style = "2px solid #28a745" if not day_data.empty else "1px solid #ccc"
+                
                 with cols[i]:
                     st.markdown(f"""
-                        <div style='background-color:{bg}; border:1px solid #ddd; padding:5px; border-radius:5px; text-align:center;'>
+                        <div style='background-color:{bg_color}; border:{border_style}; border-radius:5px; padding:10px; text-align:center;'>
                             <strong>{day}</strong>
                         </div>
                     """, unsafe_allow_html=True)
             else:
                 cols[i].write("")
 
-    # 4. เลือกหัวข้อเพื่อดูรายละเอียด (ใช้คอลัมน์ที่ 2)
+    # 4. เลือกดูรายละเอียด
     st.write("---")
     topic_list = df.iloc[:, 1].unique().tolist()
     selected = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", topic_list)
@@ -104,7 +108,6 @@ elif menu == "📅 Calendar & Case Detail":
     if selected:
         case = df[df.iloc[:, 1] == selected].iloc[0]
         st.subheader("🔍 รายละเอียดเคส")
-        # ใช้ st.write เพื่อไม่ให้ติดปัญหาการแปลงข้อมูลตารางแบบเก่า
         for col in df.columns:
             st.write(f"**{col}:** {case[col]}")
 # ==========================================
