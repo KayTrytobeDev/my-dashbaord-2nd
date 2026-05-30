@@ -58,45 +58,45 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน (Grid View)")
+    st.title("📅 ปฏิทินติดตามงาน")
     
-    # 1. เลือกเดือนปี
-    col_sel1, col_sel2 = st.columns(2)
-    with col_sel1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    with col_sel2: year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    # ดึงค่าปี ค.ศ.
+    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
     
-    # 2. เตรียมข้อมูล
-    df['Clean_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
-    cal = calendar.Calendar(firstweekday=6)
-    month_days = cal.monthdayscalendar(year, month)
-    
-    # 3. สร้าง Grid Header
-    days_name = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]
-    cols = st.columns(7)
-    for i, col in enumerate(cols):
-        col.write(f"**{days_name[i]}**")
-    
-    # 4. วาดปฏิทินแบบ Grid (Row by Row)
-    for week in month_days:
+    # ตรวจสอบ df
+    if df.empty:
+        st.error("ไม่มีข้อมูลในระบบ กรุณาเช็กการเชื่อมต่อ Google Sheets")
+    else:
+        # แปลงวันที่
+        df['Clean_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+        
+        # วาด Grid
+        cal = calendar.Calendar(firstweekday=6)
+        month_days = cal.monthdayscalendar(year, month)
+        
+        # หัวตาราง
         cols = st.columns(7)
-        for i, day in enumerate(week):
-            if day != 0:
-                # กรองข้อมูล
-                day_data = df[(df['Clean_Date'].dt.day == day) & 
-                              (df['Clean_Date'].dt.month == month) & 
-                              (df['Clean_Date'].dt.year == year)]
-                
-                with cols[i]:
-                    st.markdown(f"**{day}**")
-                    # แสดงริบบิ้น (ถ้ามีข้อมูล)
-                    for _, row in day_data.iterrows():
-                        st.markdown(f"""
-                            <div style='background:#00cc96; color:white; font-size:9px; margin:1px; padding:3px; border-radius:3px;'>
-                            {row.iloc[1]}
-                            </div>
-                        """, unsafe_allow_html=True)
-            else:
-                cols[i].write("") # ช่องว่าง
+        days_names = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
+        for i, c in enumerate(cols):
+            c.markdown(f"**{days_names[i]}**")
+            
+        # เนื้อหาปฏิทิน
+        for week in month_days:
+            cols = st.columns(7)
+            for i, day in enumerate(week):
+                if day != 0:
+                    # กรองวันที่
+                    day_data = df[(df['Clean_Date'].dt.day == day) & 
+                                  (df['Clean_Date'].dt.month == month) & 
+                                  (df['Clean_Date'].dt.year == year)]
+                    
+                    with cols[i]:
+                        st.text(str(day))
+                        # แสดงหัวข้อเรื่อง (ถ้ามี)
+                        if not day_data.empty:
+                            for topic in day_data.iloc[:, 1]: # คอลัมน์ที่ 2
+                                st.caption(f"📌 {topic}")
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
