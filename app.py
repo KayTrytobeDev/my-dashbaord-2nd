@@ -58,49 +58,53 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน")
-
-    # 1. เลือกเดือน/ปี
-    col1, col2 = st.columns(2)
-    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=0, format_func=lambda x: calendar.month_name[x])
-    with col2: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
-
-    # 2. กรองข้อมูล (ใช้คอลัมน์แรกที่ดึงมาได้ ซึ่งคือคอลัมน์ Date)
-    df['Date_Obj'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+    st.title("📅 ปฏิทินติดตามงาน (Marked Grid View)")
     
-    # 3. สร้างตาราง Grid แบบง่าย
+    # 1. ให้มันเลือกปี/เดือน ตามข้อมูลที่มีอยู่จริงใน Sheet (ไม่ต้องเดา)
+    available_years = sorted(df['Date_Obj'].dt.year.dropna().unique().astype(int))
+    year = st.selectbox("เลือกปี (ค.ศ.)", available_years, index=len(available_years)-1)
+    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    
+    # 2. สร้าง Grid ปฏิทิน
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdayscalendar(year, month)
     
-    # หัวตาราง
-    header_cols = st.columns(7)
+    # วาดหัวตาราง
+    cols = st.columns(7)
     for i, name in enumerate(["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]):
-        header_cols[i].markdown(f"**{name}**")
+        cols[i].markdown(f"**{name}**")
     
-    # วาด Grid วันที่
+    # 3. วาด Grid และ Mark สี
     for week in month_days:
         cols = st.columns(7)
         for i, day in enumerate(week):
             if day != 0:
+                # กรองข้อมูลวันนี้
+                day_data = df[(df['Date_Obj'].dt.day == day) & 
+                              (df['Date_Obj'].dt.month == month) & 
+                              (df['Date_Obj'].dt.year == year)]
+                
                 with cols[i]:
-                    st.write(f"{day}")
-                    # ดึงข้อมูลของวันนี้
-                    day_data = df[(df['Date_Obj'].dt.day == day) & 
-                                  (df['Date_Obj'].dt.month == month) & 
-                                  (df['Date_Obj'].dt.year == year)]
+                    # ตรวจสอบว่าวันนี้มีเคสไหม? ถ้ามีให้เปลี่ยนสีพื้นหลังช่อง (Mark สี)
+                    bg_color = "#e6ffe6" if not day_data.empty else "#ffffff" # เขียวอ่อนถ้ามีเคส
                     
-                    # โชว์ริบบิ้น (ใช้ข้อความธรรมดาป้องกัน Error)
+                    st.markdown(f"""
+                        <div style='background-color: {bg_color}; padding: 5px; border-radius: 5px; border: 1px solid #ddd;'>
+                            <strong>{day}</strong>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # โชว์หัวข้อสั้นๆ
                     for _, row in day_data.iterrows():
-                        topic = str(row.iloc[1]) # คอลัมน์ B คือ Index 1
-                        st.caption(f"✅ {topic[:10]}...") # ตัดข้อความให้สั้นลง
-    
-    # 4. ส่วนดูรายละเอียด (เมื่อกดเลือกหัวข้อ)
+                        st.caption(f"• {str(row.iloc[1])[:8]}")
+            else:
+                cols[i].write("")
+
+    # 4. ส่วนเลือกรายละเอียด (เหมือนเดิม)
     st.write("---")
-    selected_topic = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", df.iloc[:, 1].unique())
-    if selected_topic:
-        detail = df[df.iloc[:, 1] == selected_topic].iloc[0]
-        st.subheader("🔍 รายละเอียดเคส")
-        st.table(detail)
+    selected = st.selectbox("ดูรายละเอียดเพิ่มเติม:", df.iloc[:, 1].unique())
+    if selected:
+        st.table(df[df.iloc[:, 1] == selected].iloc[0])
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
