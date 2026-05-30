@@ -33,26 +33,37 @@ menu = st.sidebar.radio("เมนู:", ["📊 Dashboard", "📅 Calendar & Cas
 # ==========================================
 # 1. DASHBOARD (ปรับสี/กราฟสวยงาม)
 # ==========================================
-if menu == "📊 Dashboard":
+elif menu == "Dashboard":
     st.title("📊 Risk Management Overview")
-    if not df.empty:
-        c1, c2, c3 = st.columns(3)
-        c1.metric("📌 จำนวนเคสทั้งหมด", len(df))
-        c2.metric("✅ สำเร็จแล้ว", len(df[df['Status'] == 'เรียบร้อย']))
-        c3.metric("🚨 ความเสี่ยงสูง", len(df[df['Risk Level'] == 'High']))
+    
+    # 1. สรุปตัวเลข (Metrics)
+    total_cases = len(df)
+    completed_cases = len(df[df.iloc[:, 5] == 'ดำเนินการเรียบร้อย']) # สมมติคอลัมน์ 5 คือ Status
+    high_risk_cases = len(df[df.iloc[:, 8] == 'High']) # สมมติคอลัมน์ 8 คือ Risk Level
+    
+    m1, m2, m3 = st.columns(3)
+    m1.metric("📌 จำนวนเคสทั้งหมด", total_cases)
+    m2.metric("✅ สำเร็จแล้ว", completed_cases)
+    m3.metric("🚨 ความเสี่ยงสูง", high_risk_cases)
+    
+    st.write("---")
+    
+    # 2. จัด Layout กราฟ (ซ้าย: สถานะ, ขวา: ความเสี่ยง)
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.subheader("สถานะการดำเนินงาน")
+        status_counts = df.iloc[:, 5].value_counts() # เปลี่ยน index ตามจริง
+        fig_pie = px.pie(values=status_counts.values, names=status_counts.index, hole=0.4)
+        st.plotly_chart(fig_pie, use_container_width=True)
         
-        st.write("---")
-        col_l, col_r = st.columns(2)
-        with col_l:
-            st.subheader("สถานะการดำเนินงาน")
-            fig_p = px.pie(df, names='Status', hole=0.5, color_discrete_sequence=px.colors.qualitative.Pastel)
-            st.plotly_chart(fig_p, use_container_width=True)
-        with col_r:
-            st.subheader("ระดับความเสี่ยง")
-            risk_data = df['Risk Level'].value_counts().reset_index()
-            risk_data.columns = ['Risk', 'Count']
-            fig_b = px.bar(risk_data, x='Risk', y='Count', color='Risk', color_discrete_map={'High': '#ff4b4b', 'Medium': '#ffa500', 'Low': '#00cc96'})
-            st.plotly_chart(fig_b, use_container_width=True)
+    with c2:
+        st.subheader("ระดับความเสี่ยง")
+        risk_counts = df.iloc[:, 8].value_counts() # เปลี่ยน index ตามจริง
+        fig_bar = px.bar(x=risk_counts.index, y=risk_counts.values, color=risk_counts.index, 
+                         color_discrete_map={'Low': '#00cc96', 'Medium': '#ffa500', 'High': '#ff4b4b'})
+        fig_bar.update_layout(xaxis_title="Risk", yaxis_title="Count")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
