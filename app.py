@@ -6,11 +6,9 @@ from datetime import datetime
 import plotly.express as px
 import base64
 
-# ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="Risk Tracker System", layout="wide")
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
-# --- โหลดข้อมูล ---
 @st.cache_data(ttl=5)
 def load_data():
     try:
@@ -28,25 +26,22 @@ if not df.empty:
     df['date_dt'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
 
 # --- เมนู Sidebar ---
-# ใช้ชื่อให้ตรงกับด้านล่าง
 menu = st.sidebar.radio("เมนู:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
 
 # ==========================================
 # 1. DASHBOARD
 # ==========================================
-if menu == "📊 Dashboard": # แก้ตรงนี้ให้ตรงกับชื่อใน Radio
+if menu == "📊 Dashboard":
     st.title("📊 Risk Management Overview")
     
     if not df.empty:
         total_cases = len(df)
-        # ตรวจสอบชื่อให้ตรงกับค่าใน Sheet ของพี่จริงๆ
-        completed_cases = len(df[df.iloc[:, 5] == 'ดำเนินการเรียบร้อย']) 
-        high_risk_cases = len(df[df.iloc[:, 8] == 'High'])
+        completed_cases = len(df[df.iloc[:, 5] == 'ดำเนินการเรียบร้อย'])
         
         col1, col2, col3 = st.columns(3)
         col1.metric("📌 เคสทั้งหมด", total_cases)
         col2.metric("✅ ดำเนินการสำเร็จ", completed_cases)
-        col3.metric("🚨 ความเสี่ยงสูง (High)", high_risk_cases)
+        col3.metric("🚨 เคสเสี่ยงสูง", len(df[df.iloc[:, 8] == 'High']))
         
         st.markdown("---")
         
@@ -59,12 +54,13 @@ if menu == "📊 Dashboard": # แก้ตรงนี้ให้ตรงก�
             
         with c2:
             st.subheader("ระดับความเสี่ยง")
-            risk_counts = df.iloc[:, 8].value_counts()
-            fig_bar = px.bar(x=risk_counts.index, y=risk_counts.values, color=risk_counts.index,
-                             color_discrete_map={'Low': '#00cc96', 'Medium': '#ffa500', 'High': '#ff4b4b'})
+            # แก้ปัญหา TypeError โดยไม่กำหนด map ตายตัว แต่ให้ Plotly จัดสีอัตโนมัติ
+            risk_counts = df.iloc[:, 8].value_counts().reset_index()
+            risk_counts.columns = ['Risk', 'Count']
+            fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk')
             st.plotly_chart(fig_bar, use_container_width=True)
     else:
-        st.warning("ไม่มีข้อมูลในระบบ")
+        st.info("กำลังโหลดข้อมูล...")
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
