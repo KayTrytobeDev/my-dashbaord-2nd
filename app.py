@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import requests
 import base64
+import calendar
 from datetime import datetime
 
 # คอนฟิกหน้าเว็บเบื้องต้นเปิด Wide Mode
@@ -17,7 +18,7 @@ except:
 # ==========================================
 # ฟังก์ชันโหลดข้อมูลผ่าน Web App API
 # ==========================================
-@st.cache_data(ttl=30) # ลด Cache ลงเหลือ 30 วินาทีเพื่อให้ข้อมูลอัปเดตไวขึ้น
+@st.cache_data(ttl=20)
 def load_data_from_script():
     try:
         response = requests.get(API_URL)
@@ -35,6 +36,21 @@ def load_data_from_script():
         return pd.DataFrame()
 
 df = load_data_from_script()
+
+# Helper function สำหรับแปลงและล้างข้อมูลวันที่
+def clean_and_parse_date(date_val):
+    if pd.isna(date_val):
+        return None
+    d_str = str(date_val).strip()
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(d_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+if not df.empty:
+    df['Parsed_Date'] = df['Date'].apply(clean_and_parse_date)
 
 # ==========================================
 # ระบบเมนูนำทางฝั่งซ้าย (Sidebar Navigator)
@@ -87,48 +103,3 @@ if page == "📊 Data Visualizer (หน้าแรก)":
             risk_order = ['Low', 'Medium', 'High']
             risk_df = df['Risk Level'].value_counts().reindex(risk_order, fill_value=0).reset_index()
             risk_df.columns = ['ระดับความเสี่ยง', 'จำนวน']
-            risk_df['เปอร์เซ็นต์ (%)'] = ((risk_df['จำนวน'] / total_cases) * 100).round(2)
-            
-            c3, c4 = st.columns([1, 1])
-            with c3:
-                st.dataframe(risk_df, use_container_width=True, hide_index=True)
-            with c4:
-                color_map = {'Low': '#2ca02c', 'Medium': '#ff7f0e', 'High': '#d62728'}
-                fig_risk = px.bar(risk_df, x='ระดับความเสี่ยง', y='จำนวน', text='เปอร์เซ็นต์ (%)',
-                                  title="กราฟแสดงเปอร์เซ็นต์ระดับความเสี่ยง",
-                                  color='ระดับความเสี่ยง', color_discrete_map=color_map)
-                fig_risk.update_traces(texttemplate='%{text}%', textposition='outside')
-                st.plotly_chart(fig_risk, use_container_width=True)
-
-# ==========================================
-# หน้าที่ 2: Calendar & Case Detail (เวอร์ชันกันล่ม)
-# ==========================================
-elif page == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงานและรายละเอียดข้อมูลเคสเชิงลึก")
-    st.caption("เลือกตรวจสอบวันที่ต้องการจากตัวเลือกปฏิทินเพื่อเรียกดูประวัติและหลักฐานการแก้ไข")
-    
-    if df.empty:
-        st.info("💡 ไม่มีข้อมูลแสดงผลในระบบ")
-    else:
-        # ระบบจัดการและทำความสะอาดฟอร์แมตวันที่เพื่อความปลอดภัย ป้องกันข้อมูลในชีทเพี้ยน
-        parsed_dates = []
-        for d in df['Date'].dropna().unique():
-            d_str = str(d).strip()
-            for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%d/%m/%Y"):
-                try:
-                    parsed_dates.append(datetime.strptime(d_str, fmt).date())
-                    break
-                except ValueError:
-                    continue
-        
-        # ค้นหาวันที่ล่าสุดที่มีข้อมูลเพื่อตั้งเป็นค่าเริ่มต้น
-        default_date = max(parsed_dates) if parsed_dates else datetime.now().date()
-        
-        # แสดงกล่องปฏิทินให้เลือกวัน (เสถียรสูง หน้าเว็บไม่มีทางล่ม)
-        col_cal, col_info = st.columns([1, 2])
-        with col_cal:
-            selected_date = st.date_input("📆 คลิกเลือกวันที่บนปฏิทิน:", default_date)
-        
-        # แปลงวันที่ยูเซอร์เลือกให้อยู่ในรูปแบบ String เพื่อไปค้นใน DataFrame
-        search_str_1 = selected_date.strftime("%m/%d/%Y")
-        search_str_2 = selected_date
