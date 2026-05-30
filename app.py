@@ -58,29 +58,49 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 รายละเอียดข้อมูล (Case Detail)")
+    st.title("📅 ปฏิทินติดตามงาน (Google Calendar Style)")
     
-    # 1. เช็กว่าโหลดข้อมูลมาได้หรือยัง
-    if df.empty:
-        st.error("ไม่มีข้อมูลในระบบ")
-    else:
-        # 2. สร้าง List ของ Column B (หัวข้อเรื่อง) เพื่อให้เลือก
-        # ใช้ .tolist() เพื่อดึงค่า Column B ออกมา (สมมติ Column B คือ Index 1)
-        case_list = df.iloc[:, 1].tolist()
-        
-        selected_case = st.selectbox("เลือกหัวข้อความเสี่ยง (Column B):", case_list)
-        
-        # 3. เมื่อเลือกแล้ว ให้ดึงข้อมูลทั้งแถวมาโชว์
-        if selected_case:
-            # ดึงแถวที่มีชื่อหัวข้อตรงกับที่เลือก
-            case_data = df[df.iloc[:, 1] == selected_case].iloc[0]
-            
-            st.write("---")
-            st.subheader("🔍 รายละเอียดเคส")
-            
-            # โชว์ข้อมูลทุกคอลัมน์ในแถวนั้น
-            for col_name, value in case_data.items():
-                st.write(f"**{col_name}:** {value}")
+    # 1. ส่วนเลือกเดือน/ปี
+    col1, col2 = st.columns(2)
+    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    with col2: year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    
+    # 2. สร้าง Grid ปฏิทิน
+    cal = calendar.Calendar(firstweekday=6)
+    month_days = cal.monthdayscalendar(year, month)
+    days_names = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]
+    
+    # วาดหัวตาราง
+    header_cols = st.columns(7)
+    for i, col in enumerate(header_cols): col.markdown(f"**{days_names[i]}**")
+    
+    # 3. วาดช่องวัน (Grid)
+    for week in month_days:
+        cols = st.columns(7)
+        for i, day in enumerate(week):
+            if day != 0:
+                with cols[i]:
+                    st.write(f"**{day}**")
+                    # กรองข้อมูลรายวัน
+                    day_data = df[(df['Parsed_Date'].dt.day == day) & 
+                                  (df['Parsed_Date'].dt.month == month) & 
+                                  (df['Parsed_Date'].dt.year == year)]
+                    
+                    # วนลูปโชว์หัวข้อ (ริบบิ้น)
+                    for idx, row in day_data.iterrows():
+                        topic = row.iloc[1] # คอลัมน์ B
+                        # ใช้ปุ่มแทนข้อความ เพื่อให้กดเลือกได้
+                        if st.button(f"📌 {topic[:15]}...", key=f"btn_{idx}"):
+                            st.session_state.selected_case = topic
+            else:
+                cols[i].write("")
+
+    # 4. แสดงรายละเอียดเมื่อเลือกเคส
+    if 'selected_case' in st.session_state:
+        st.write("---")
+        st.subheader("🔍 รายละเอียดเคส")
+        case_row = df[df.iloc[:, 1] == st.session_state.selected_case].iloc[0]
+        st.table(case_row)
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
