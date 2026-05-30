@@ -1,40 +1,60 @@
 import streamlit as st
 import pandas as pd
 import requests
+import calendar
+from datetime import datetime
+import plotly.express as px
+import base64
 
-st.set_page_config(page_title="Debug Mode", layout="wide")
-API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
+# ตั้งค่าหน้าเว็บ
+st.set_page_config(page_title="Risk Tracker System", layout="wide")
 
+# 🔴 ใส่ลิงก์ Web App ของพี่ที่นี่ (ต้องเป็นลิงก์ที่ Deploy แล้ว)
+API_URL = "ใส่ลิงก์ของคุณที่นี่"
+
+# --- ฟังก์ชันจัดการข้อมูล ---
 @st.cache_data(ttl=5)
 def load_data():
     try:
-        response = requests.get(API_URL)
+        response = requests.get(API_URL, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            df = pd.DataFrame(data[1:], columns=data[0])
-            df.columns = df.columns.str.strip()
-            return df
+            if len(data) > 1:
+                df = pd.DataFrame(data[1:], columns=data[0])
+                df.columns = df.columns.str.strip() # ลบช่องว่างหัวคอลัมน์
+                return df
         return pd.DataFrame()
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
+# โหลดข้อมูล
 df = load_data()
 
-st.title("🔍 โหมดตรวจสอบโครงสร้างข้อมูล")
-
+# --- แปลงวันที่แบบรัดกุม ---
 if not df.empty:
-    st.success(f"โหลดข้อมูลได้แล้ว! มีทั้งหมด {len(df)} แถว")
-    
-    # 1. แสดงชื่อคอลัมน์ทั้งหมด (เพื่อที่เราจะได้เรียกชื่อถูก แทนการเดา index)
-    st.subheader("ชื่อคอลัมน์ที่โปรแกรมเห็น (Copy อันนี้มาบอกผมครับ)")
-    st.write(df.columns.tolist())
-    
-    # 2. แสดงตัวอย่างข้อมูล
-    st.subheader("ตัวอย่างข้อมูล 3 แถวแรก")
-    st.dataframe(df.head(3))
-else:
-    st.warning("ยังไม่มีข้อมูลโหลดเข้ามา โปรดเช็ก API_URL หรือการเชื่อมต่อ")
+    # ใช้ errors='coerce' เพื่อให้ค่าที่แปลงไม่ได้กลายเป็น NaT แทนที่จะ Error
+    df['Parsed_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+
+# --- เมนู Sidebar ---
+menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
+
+# ==========================================
+# 1. DASHBOARD
+# ==========================================
+if menu == "📊 Dashboard":
+    st.title("📊 สรุปภาพรวมความเสี่ยง")
+    if not df.empty:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("📌 เคสทั้งหมด", len(df))
+        c2.metric("✅ สำเร็จ", len(df[df['Status'].str.contains('เรียบร้อย|สำเร็จ', na=False)]))
+        c3.metric("🚨 ความเสี่ยงสูง", len(df[df['Risk Level'] == 'High']))
+        
+        st.write("---")
+        # ใช้ .value_counts().reset_index() เพื่อให้เป็น DataFrame ที่ Plotly อ่านได้
+        risk_counts = df['Risk Level'].value_counts().reset_index()
+        risk_counts.columns = ['Risk', 'Count']
+        fig = px.bar(risk_counts, x='Risk', y='Count', color='Risk',
+                     color_discrete_map={'High': '#ff4b4b', 'Medium': '#ffa500', 'Low': '#00cc96'})
+        st.plotly_chart(fig, use_container_width=True)
 # ==========================================
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
