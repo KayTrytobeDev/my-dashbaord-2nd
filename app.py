@@ -8,7 +8,7 @@ import base64  # แก้ NameError: base64
 
 # --- ตั้งค่า ---
 st.set_page_config(layout="wide")
-API_URL = "ใส่ลิงก์ของคุณที่นี่"
+API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/execอ"
 
 @st.cache_data(ttl=5)
 def load_data():
