@@ -18,7 +18,7 @@ except:
 # ==========================================
 # ฟังก์ชันโหลดข้อมูลผ่าน Web App API พร้อมระบบดักจับ Error
 # ==========================================
-@st.cache_data(ttl=10) # ตั้งให้ดึงข้อมูลบ่อยขึ้นช่วงทดสอบ
+@st.cache_data(ttl=15)
 def load_data_from_script():
     try:
         if "XXXXX" in API_URL or not API_URL.startswith("http"):
@@ -32,9 +32,8 @@ def load_data_from_script():
                 headers = raw_data[0]
                 rows = raw_data[1:]
                 
-                # ตรวจสอบว่ามีแถวข้อมูลจริงไหม
                 if not rows:
-                    st.warning("⚠️ ดึงข้อมูลจาก Google Sheet ได้สำเร็จ แต่ไม่พบแถวข้อมูล (มีแต่หัวตาราง)")
+                    st.warning("⚠️ ดึงข้อมูลได้สำเร็จ แต่ไม่พบแถวข้อมูลใน Google Sheet")
                     return pd.DataFrame()
                     
                 df = pd.DataFrame(rows, columns=headers)
@@ -52,7 +51,7 @@ def load_data_from_script():
 
 df = load_data_from_script()
 
-# ฟังก์ชันทำความสะอาดข้อมูลวันที่ (ดักจับค่าว่างและฟอร์แมตเพี้ยน)
+# ฟังก์ชันทำความสะอาดข้อมูลวันที่
 def clean_and_parse_date(date_val):
     if pd.isna(date_val) or str(date_val).strip() == "":
         return None
@@ -64,15 +63,12 @@ def clean_and_parse_date(date_val):
             continue
     return None
 
-# ตรวจสอบโครงสร้างตารางข้อมูลและเตรียม Field วันที่
 if not df.empty:
-    # ตรวจสอบคอลัมน์สำคัญที่ต้องมีใน Google Sheet
     required_cols = ['Date', 'Topic/risk finding', 'Status', 'Risk Level']
     missing_cols = [col for col in required_cols if col not in df.columns]
     
     if missing_cols:
         st.error(f"❌ ชื่อหัวตารางใน Google Sheet ไม่ตรงกับระบบ! ขาดคอลัมน์: {missing_cols}")
-        st.info("💡 โปรดตรวจสอบให้แน่ใจว่าแถวที่ 1 ใน Google Sheet มีคำเหล่านี้สะกดถูกต้องทุกตัวอักษร")
     else:
         df['Parsed_Date'] = df['Date'].apply(clean_and_parse_date)
 
@@ -92,10 +88,8 @@ page = st.sidebar.radio("เมนูใช้งานระบบ:", [
 if page == "📊 Data Visualizer (หน้าแรก)":
     st.title("📊 ภาพรวมและสถิติข้อมูลความเสี่ยงประจำองค์กร")
     
-    if df.empty:
-        st.warning("⚠️ ไม่มีข้อมูลในตารางระบบ ไม่สามารถวาดกราฟได้")
-    elif 'missing_cols' in locals() and missing_cols:
-        st.warning("⚠️ โครงสร้างตารางไม่ถูกต้อง กรุณาแก้ไขชื่อหัวตารางใน Google Sheet")
+    if df.empty or ('missing_cols' in locals() and missing_cols):
+        st.warning("⚠️ ไม่มีข้อมูลในระบบ หรือโครงสร้างตารางไม่ถูกต้อง ไม่สามารถแสดงสถิติได้")
     else:
         total_cases = len(df)
         
@@ -319,8 +313,7 @@ elif page == "📝 Report New Case":
             if not f_topic:
                 st.error("❌ เกิดข้อผิดพลาด: จำเป็นต้องระบุข้อมูลในช่องหัวข้อความเสี่ยงก่อนทำการส่งข้อมูล!")
             else:
-                with st.spinner("🚀 ระบบกำลังจัดส่งรายงานเคสและทำการบันทึกข้อมูล..."):
-                    
+                with st.spinner("🚀 ระบบกำลังจัดส่งรายงานเคส..."):
                     payload = {
                         "date": f_date, "topic": f_topic, "location": f_location,
                         "responsible": f_responsible, "status": f_status, "action": f_action, "risk": f_risk,
@@ -332,7 +325,6 @@ elif page == "📝 Report New Case":
                         payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode()
                         payload["imgBeforeName"] = file_before.name
                         payload["imgBeforeType"] = file_before.type
-                        
                     if file_after:
                         payload["imgAfterBase64"] = base64.b64encode(file_after.read()).decode()
                         payload["imgAfterName"] = file_after.name
@@ -341,9 +333,9 @@ elif page == "📝 Report New Case":
                     try:
                         api_response = requests.post(API_URL, json=payload)
                         if api_response.status_code == 200 and api_response.json().get("status") == "success":
-                            st.success("🎉 บันทึกรายงานเหตุการณ์สำเร็จ! ข้อมูลและรูปภาพถูกฝังเข้าสู่ระบบหลักเรียบร้อยแล้ว")
+                            st.success("🎉 บันทึกรายงานเหตุการณ์สำเร็จ!")
                             st.cache_data.clear() 
                         else:
                             st.error(f"❌ ระบบปลายทางตอบปฏิเสธคำขอ: {api_response.text}")
                     except Exception as err:
-                        st.error(f"❌ ไม่สามารถติดต่อเชื่อมโยงกับเซิร์ฟเวอร์ระบบจัดเก็บได้: {err}")
+                        st.error(f"❌ ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: {err}")
