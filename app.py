@@ -58,45 +58,29 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน")
+    st.title("📅 รายละเอียดข้อมูล (Case Detail)")
     
-    # ดึงค่าปี ค.ศ.
-    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
-    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    
-    # ตรวจสอบ df
+    # 1. เช็กว่าโหลดข้อมูลมาได้หรือยัง
     if df.empty:
-        st.error("ไม่มีข้อมูลในระบบ กรุณาเช็กการเชื่อมต่อ Google Sheets")
+        st.error("ไม่มีข้อมูลในระบบ")
     else:
-        # แปลงวันที่
-        df['Clean_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+        # 2. สร้าง List ของ Column B (หัวข้อเรื่อง) เพื่อให้เลือก
+        # ใช้ .tolist() เพื่อดึงค่า Column B ออกมา (สมมติ Column B คือ Index 1)
+        case_list = df.iloc[:, 1].tolist()
         
-        # วาด Grid
-        cal = calendar.Calendar(firstweekday=6)
-        month_days = cal.monthdayscalendar(year, month)
+        selected_case = st.selectbox("เลือกหัวข้อความเสี่ยง (Column B):", case_list)
         
-        # หัวตาราง
-        cols = st.columns(7)
-        days_names = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]
-        for i, c in enumerate(cols):
-            c.markdown(f"**{days_names[i]}**")
+        # 3. เมื่อเลือกแล้ว ให้ดึงข้อมูลทั้งแถวมาโชว์
+        if selected_case:
+            # ดึงแถวที่มีชื่อหัวข้อตรงกับที่เลือก
+            case_data = df[df.iloc[:, 1] == selected_case].iloc[0]
             
-        # เนื้อหาปฏิทิน
-        for week in month_days:
-            cols = st.columns(7)
-            for i, day in enumerate(week):
-                if day != 0:
-                    # กรองวันที่
-                    day_data = df[(df['Clean_Date'].dt.day == day) & 
-                                  (df['Clean_Date'].dt.month == month) & 
-                                  (df['Clean_Date'].dt.year == year)]
-                    
-                    with cols[i]:
-                        st.text(str(day))
-                        # แสดงหัวข้อเรื่อง (ถ้ามี)
-                        if not day_data.empty:
-                            for topic in day_data.iloc[:, 1]: # คอลัมน์ที่ 2
-                                st.caption(f"📌 {topic}")
+            st.write("---")
+            st.subheader("🔍 รายละเอียดเคส")
+            
+            # โชว์ข้อมูลทุกคอลัมน์ในแถวนั้น
+            for col_name, value in case_data.items():
+                st.write(f"**{col_name}:** {value}")
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
