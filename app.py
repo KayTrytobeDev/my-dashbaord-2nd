@@ -65,45 +65,41 @@ elif menu == "📅 Calendar & Case Detail":
     with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
     with col2: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
 
-    # 2. กรองข้อมูล
+    # 2. กรองข้อมูลวันที่
     df['Date_Obj'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
     
-    # 3. สร้างตาราง Grid
+    # 3. สร้างปฏิทินเป็นตาราง HTML
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdayscalendar(year, month)
     
-    # หัวตาราง
-    header_cols = st.columns(7)
-    for i, name in enumerate(["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]):
-        header_cols[i].markdown(f"**{name}**")
+    html = "<table style='width:100%; border-collapse:collapse; text-align:center;'>"
+    html += "<tr><th>อา</th><th>จ</th><th>อ</th><th>พ</th><th>พฤ</th><th>ศ</th><th>ส</th></tr>"
     
-    # วาด Grid วันที่
     for week in month_days:
-        cols = st.columns(7)
-        for i, day in enumerate(week):
-            if day != 0:
-                with cols[i]:
-                    # ดึงข้อมูลของวันนี้
-                    day_data = df[(df['Date_Obj'].dt.day == day) & 
-                                  (df['Date_Obj'].dt.month == month) & 
-                                  (df['Date_Obj'].dt.year == year)]
-                    
-                    # --- ส่วนที่เพิ่ม: การ Mark สีพื้นหลัง ---
-                    # ถ้า day_data ไม่ว่าง (มีเคส) ให้ใช้สีเขียวอ่อน ถ้าไม่มีให้เป็นสีใส
-                    bg_color = "#d4edda" if not day_data.empty else "transparent"
-                    
-                    st.markdown(f"""
-                        <div style='background-color: {bg_color}; padding: 5px; border-radius: 5px; text-align: center;'>
-                            <strong>{day}</strong>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # โชว์ริบบิ้น
-                    for _, row in day_data.iterrows():
-                        topic = str(row.iloc[1])
-                        st.caption(f"✅ {topic[:10]}...") 
+        html += "<tr>"
+        for day in week:
+            if day == 0:
+                html += "<td></td>"
             else:
-                cols[i].write("")
+                # กรองข้อมูล
+                day_data = df[(df['Date_Obj'].dt.day == day) & 
+                              (df['Date_Obj'].dt.month == month) & 
+                              (df['Date_Obj'].dt.year == year)]
+                
+                # ถ้ามีเคส ให้เปลี่ยนสีพื้นหลังช่องเป็นสีเขียวอ่อน
+                bg_color = "#d4edda" if not day_data.empty else "#ffffff"
+                border = "2px solid #28a745" if not day_data.empty else "1px solid #ddd"
+                
+                html += f"""
+                    <td style='height:80px; vertical-align:top; border:{border}; background-color:{bg_color};'>
+                        <strong>{day}</strong><br>
+                        <span style='font-size:9px;'>{"• มีเคส" if not day_data.empty else ""}</span>
+                    </td>
+                """
+        html += "</tr>"
+    html += "</table>"
+    
+    st.markdown(html, unsafe_allow_html=True)
     
     # 4. ส่วนดูรายละเอียด
     st.write("---")
