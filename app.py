@@ -60,17 +60,18 @@ if menu == "📊 Dashboard":
 elif menu == "📅 Calendar & Case Detail":
     st.title("📅 ปฏิทินติดตามงาน")
     
-    # ดึงค่าเดือนและปี
-    m_idx = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    y_thai = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1)
-    year = y_thai - 543
+    # 1. เลือกเดือนปี
+    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
     
-    # --- จุดแก้ไข: บังคับแปลงวันที่แบบ Manual เพื่อไม่ให้พลาด ---
-    # เราจะใช้คอลัมน์แรก (Date) โดยไม่สนว่า format จะเป็นอย่างไร
-    df['Temp_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+    # 2. ทำความสะอาดข้อมูลวันที่ให้ชัวร์ที่สุด
+    df['Clean_Date'] = pd.to_datetime(df.iloc[:, 0], errors='coerce')
+    
+    # --- TEST: แสดงข้อมูลดิบ ---
+    st.write("ข้อมูลที่โหลดมาได้ (เช็กว่ามีแถวในปฏิทินไหม):", df[['Clean_Date', df.columns[1]]].head(5))
     
     cal = calendar.Calendar(firstweekday=6)
-    weeks = cal.monthdayscalendar(year, m_idx)
+    weeks = cal.monthdayscalendar(year, month)
     
     html = "<table style='width:100%; border-collapse:collapse;'>"
     for w in weeks:
@@ -79,23 +80,16 @@ elif menu == "📅 Calendar & Case Detail":
             if d == 0: 
                 html += "<td style='height:120px; border:1px solid #eee;'></td>"
             else:
-                # กรองข้อมูลตรงนี้
-                mask = (df['Temp_Date'].dt.day == d) & \
-                       (df['Temp_Date'].dt.month == m_idx) & \
-                       (df['Temp_Date'].dt.year == year)
-                day_data = df[mask]
+                # กรองข้อมูล
+                day_data = df[(df['Clean_Date'].dt.day == d) & 
+                              (df['Clean_Date'].dt.month == month) & 
+                              (df['Clean_Date'].dt.year == year)]
                 
                 tags = ""
+                # ถ้ามีข้อมูล ให้วนลูปโชว์เลย
                 for _, r in day_data.iterrows():
-                    # ดึงชื่อคอลัมน์โดยใช้ชื่อที่พี่มีแน่ๆ คือคอลัมน์ที่ 2 (index 1) 
-                    # เผื่อว่าชื่อคอลัมน์มันมีเว้นวรรคที่เรามองไม่เห็น
-                    topic = r.iloc[1] 
-                    
-                    # ปรับสีริบบิ้นตามสถานะ (แดง=High, ส้ม=Medium, เขียว=Low)
-                    risk = str(r.get('Risk Level', '')).lower()
-                    color = "#ff4b4b" if 'high' in risk else ("#ffa500" if 'medium' in risk else "#00cc96")
-                    
-                    tags += f"<div style='background:{color}; color:white; font-size:10px; margin:2px; padding:2px; border-radius:3px;'>• {topic}</div>"
+                    # r.iloc[1] คือคอลัมน์ที่ 2 (หัวข้อ) แน่นอน
+                    tags += f"<div style='background:green; color:white; font-size:10px; margin:1px; padding:2px;'>• {r.iloc[1]}</div>"
                 
                 html += f"<td style='height:120px; border:1px solid #eee; vertical-align:top;'><strong>{d}</strong><br>{tags}</td>"
         html += "</tr>"
