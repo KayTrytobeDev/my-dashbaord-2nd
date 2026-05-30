@@ -10,7 +10,7 @@ import base64
 st.set_page_config(page_title="Risk Tracker System", layout="wide")
 
 # 🔴 ใส่ลิงก์ Web App ของพี่ที่นี่ (ต้องเป็นลิงก์ที่ Deploy แล้ว)
-API_URL = "ใส่ลิงก์ของคุณที่นี่"
+API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 # --- ฟังก์ชันจัดการข้อมูล ---
 @st.cache_data(ttl=5)
