@@ -10,7 +10,7 @@ from datetime import datetime
 st.set_page_config(page_title="Risk & Corrective Tracker", layout="wide", initial_sidebar_state="expanded")
 
 # 🔴 ใส่ลิงก์ Web App (URL ของ Google Apps Script ที่ลงท้ายด้วย /exec) ของพี่ตรงนี้ได้เลยครับ
-API_URL = "เอาลิงก์_Web_App_มาวางตรงนี้" 
+API_URL = "https://script.google.com/macros/s/AKfycbxMCFK88knNYwWyw_aRBqqP4ARGozoWXAfZxgZCndtqK5NCwKZyIyaQ7GvNGp1fBJPP/exec" 
 
 # ==========================================
 # ฟังก์ชันโหลดข้อมูลผ่าน Web App API
