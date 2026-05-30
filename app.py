@@ -81,21 +81,64 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน")
-    month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    st.title("📅 ปฏิทินติดตามงานและรายละเอียดข้อมูลเชิงลึก")
     
-    weeks = calendar.Calendar(firstweekday=6).monthdayscalendar(year, month)
-    html = "<table style='width:100%; border-collapse:collapse;'>"
-    for w in weeks:
+    # ส่วนเลือกเดือน/ปี
+    col1, col2 = st.columns(2)
+    with col1:
+        month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+    with col2:
+        # ใช้ปี พ.ศ. ตามที่พี่ต้องการ
+        thai_year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1)
+        year = thai_year - 543
+    
+    # ส่วนวาดปฏิทิน
+    cal = calendar.Calendar(firstweekday=6)
+    weeks = cal.monthdayscalendar(year, month)
+    
+    st.markdown("""
+        <style>
+            .event-tag { 
+                font-size: 10px; padding: 2px 5px; margin-bottom: 2px; border-radius: 4px; 
+                color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+                display: block; cursor: pointer;
+            }
+            .risk-high { background: #ff4b4b; }
+            .risk-medium { background: #ffa500; }
+            .risk-low { background: #00cc96; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    html = "<table style='width:100%; border-collapse:collapse; border:1px solid #ddd;'>"
+    html += "<tr>" + "".join([f"<th style='text-align:center; padding:10px;'>{day}</th>" for day in ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."]]) + "</tr>"
+    
+    for week in weeks:
         html += "<tr>"
-        for d in w:
-            if d == 0: html += "<td style='height:100px; border:1px solid #eee;'></td>"
+        for d in week:
+            if d == 0: 
+                html += "<td style='height:120px; border:1px solid #eee;'></td>"
             else:
-                day_data = df[(df['Parsed_Date'].dt.day == d) & (df['Parsed_Date'].dt.month == month) & (df['Parsed_Date'].dt.year == year)]
-                tags = "".join([f"<div class='event-tag risk-{str(r['Risk Level']).lower()}'>• {r['Topic/risk finding']}</div>" for _, r in day_data.iterrows()])
-                html += f"<td style='height:100px; border:1px solid #eee; vertical-align:top;'><strong>{d}</strong><br>{tags}</td>"
+                # กรองข้อมูลให้ตรงกับวันที่
+                # ตรวจสอบชื่อคอลัมน์ "Topic/risk finding" ให้ตรงกับในไฟล์ Sheet
+                day_data = df[
+                    (df['Parsed_Date'].dt.day == d) & 
+                    (df['Parsed_Date'].dt.month == month) & 
+                    (df['Parsed_Date'].dt.year == year)
+                ]
+                
+                tags = ""
+                for _, row in day_data.iterrows():
+                    risk = str(row['Risk Level']).lower()
+                    color_class = "risk-low"
+                    if 'high' in risk: color_class = "risk-high"
+                    elif 'medium' in risk: color_class = "risk-medium"
+                    
+                    # ริบบิ้นแสดงรายละเอียดชื่อเรื่อง
+                    tags += f"<div class='event-tag {color_class}'>• {row['Topic/risk finding']}</div>"
+                
+                html += f"<td style='height:120px; border:1px solid #eee; vertical-align:top; padding:2px;'><strong>{d}</strong><br>{tags}</td>"
         html += "</tr>"
+    
     st.markdown(html + "</table>", unsafe_allow_html=True)
 
 # ==========================================
