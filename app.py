@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import calendar
+import base64  # <--- ต้องมีบรรทัดนี้ ไม่งั้น Error ครับ
 from datetime import datetime
 import plotly.express as px
 
@@ -112,14 +113,13 @@ elif menu == "📝 Report New Case":
         f_action = st.text_area("แนวทางแก้ไข (Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
         
-        # เพิ่มส่วนอัปโหลดรูปภาพให้ตรงกับ doPost
-        file_before = st.file_uploader("รูปก่อนแก้ไข", type=["jpg", "png"])
-        file_after = st.file_uploader("รูปหลังแก้ไข", type=["jpg", "png"])
+        file_before = st.file_uploader("รูปก่อนแก้ไข", type=["jpg", "png", "jpeg"])
+        file_after = st.file_uploader("รูปหลังแก้ไข", type=["jpg", "png", "jpeg"])
         
         submitted = st.form_submit_button("🚀 บันทึกข้อมูล")
         
         if submitted:
-            # เตรียมข้อมูลให้ตรงกับโครงสร้าง doPost ของพี่
+            # เตรียม payload ให้ตรงกับชื่อตัวแปรใน doPost ของพี่เป๊ะๆ
             payload = {
                 "date": f_date.strftime("%Y-%m-%d"),
                 "topic": f_topic,
@@ -132,15 +132,24 @@ elif menu == "📝 Report New Case":
                 "imgAfterBase64": "", "imgAfterName": "", "imgAfterType": ""
             }
             
-            # แปลงรูปเป็น Base64 (ถ้ามีการเลือกไฟล์)
+            # แปลงรูปก่อน
             if file_before:
-                payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode()
+                payload["imgBeforeBase64"] = base64.b64encode(file_before.read()).decode('utf-8')
                 payload["imgBeforeName"] = file_before.name
                 payload["imgBeforeType"] = file_before.type
+                
+            # แปลงรูปหลัง
+            if file_after:
+                payload["imgAfterBase64"] = base64.b64encode(file_after.read()).decode('utf-8')
+                payload["imgAfterName"] = file_after.name
+                payload["imgAfterType"] = file_after.type
             
-            # ส่งข้อมูลไปที่ Google Apps Script
-            res = requests.post(API_URL, json=payload)
-            if res.status_code == 200:
-                st.success("บันทึกข้อมูลเรียบร้อย!")
-            else:
-                st.error("บันทึกไม่สำเร็จ")
+            with st.spinner('กำลังบันทึกข้อมูลและอัปโหลดรูปภาพ...'):
+                try:
+                    res = requests.post(API_URL, json=payload)
+                    if res.status_code == 200:
+                        st.success("✅ บันทึกข้อมูลสำเร็จ!")
+                    else:
+                        st.error(f"Error: {res.text}")
+                except Exception as e:
+                    st.error(f"เกิดข้อผิดพลาด: {e}")
