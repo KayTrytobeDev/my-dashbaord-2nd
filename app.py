@@ -101,11 +101,44 @@ elif menu == "📅 Calendar & Case Detail":
 # 3. REPORT NEW CASE
 # ==========================================
 elif menu == "📝 Report New Case":
-    st.title("📝 บันทึกข้อมูลใหม่")
-    with st.form("risk_form"):
-        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง")
-        f_status = st.selectbox("สถานะ", ["รอดำเนินการ", "กำลังดำเนินการ", "เรียบร้อย"])
-        f_risk = st.selectbox("ระดับความเสี่ยง", ["Low", "Medium", "High"])
-        if st.form_submit_button("บันทึกข้อมูล"):
-            # ส่งค่าไปยัง Web App ของพี่
-            st.success("บันทึกเรียบร้อย!")
+    st.title("📝 รายงานเคสความเสี่ยงใหม่")
+    
+    with st.form("risk_form", clear_on_submit=True):
+        f_date = st.date_input("วันที่ (Date)")
+        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic/risk finding)")
+        f_location = st.text_input("สถานที่ (Location)")
+        f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
+        f_status = st.selectbox("สถานะ (Status)", ["ดำเนินการเรียบร้อย", "รอการดำเนินการ"])
+        f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
+        f_remark = st.text_input("หมายเหตุ (Remark)")
+        f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
+        
+        submitted = st.form_submit_button("🚀 บันทึกข้อมูลเข้า Google Sheet")
+        
+        if submitted:
+            # ตรวจสอบว่าต้องมีหัวข้อถึงจะส่ง
+            if f_topic:
+                # สร้าง Payload ให้ตรงชื่อคอลัมน์ใน Google Sheet ของพี่
+                payload = {
+                    "Date": f_date.strftime("%Y-%m-%d"),
+                    "Topic/risk finding": f_topic,
+                    "Location": f_location,
+                    "Responsible Person": f_resp,
+                    "Status": f_status,
+                    "Corrective Action": f_action,
+                    "Remark": f_remark,
+                    "Risk Level": f_risk
+                }
+                
+                # ส่งข้อมูลไปที่ Web App
+                try:
+                    res = requests.post(API_URL, json=payload)
+                    if res.status_code == 200:
+                        st.success("✅ บันทึกข้อมูลลง Google Sheet สำเร็จ!")
+                        st.balloons()
+                    else:
+                        st.error(f"เกิดข้อผิดพลาดในการบันทึก: {res.status_code}")
+                except Exception as e:
+                    st.error(f"เชื่อมต่อ Web App ไม่ได้: {e}")
+            else:
+                st.warning("กรุณากรอกหัวข้อประเด็นความเสี่ยงด้วยครับ")
