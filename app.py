@@ -58,49 +58,17 @@ if menu == "📊 Dashboard":
 # 2. CALENDAR (แสดงชื่อเคสชัดเจน)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน (Google Calendar Style)")
+    st.title("📅 ปฏิทินติดตามงาน")
     
-    # 1. ส่วนเลือกเดือน/ปี
-    col1, col2 = st.columns(2)
-    with col1: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-    with col2: year = st.selectbox("เลือกปี พ.ศ.", [2568, 2569, 2570], index=1) - 543
+    # [เช็กข้อมูล]
+    st.write("จำนวนแถวที่ดึงได้จาก Sheet:", len(df))
+    st.write("ตัวอย่างข้อมูลที่ดึงได้:", df.head()) # ถ้าตรงนี้ขึ้นว่างเปล่า แสดงว่าดึงข้อมูลไม่สำเร็จ
     
-    # 2. สร้าง Grid ปฏิทิน
-    cal = calendar.Calendar(firstweekday=6)
-    month_days = cal.monthdayscalendar(year, month)
-    days_names = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."]
-    
-    # วาดหัวตาราง
-    header_cols = st.columns(7)
-    for i, col in enumerate(header_cols): col.markdown(f"**{days_names[i]}**")
-    
-    # 3. วาดช่องวัน (Grid)
-    for week in month_days:
-        cols = st.columns(7)
-        for i, day in enumerate(week):
-            if day != 0:
-                with cols[i]:
-                    st.write(f"**{day}**")
-                    # กรองข้อมูลรายวัน
-                    day_data = df[(df['Parsed_Date'].dt.day == day) & 
-                                  (df['Parsed_Date'].dt.month == month) & 
-                                  (df['Parsed_Date'].dt.year == year)]
-                    
-                    # วนลูปโชว์หัวข้อ (ริบบิ้น)
-                    for idx, row in day_data.iterrows():
-                        topic = row.iloc[1] # คอลัมน์ B
-                        # ใช้ปุ่มแทนข้อความ เพื่อให้กดเลือกได้
-                        if st.button(f"📌 {topic[:15]}...", key=f"btn_{idx}"):
-                            st.session_state.selected_case = topic
-            else:
-                cols[i].write("")
-
-    # 4. แสดงรายละเอียดเมื่อเลือกเคส
-    if 'selected_case' in st.session_state:
-        st.write("---")
-        st.subheader("🔍 รายละเอียดเคส")
-        case_row = df[df.iloc[:, 1] == st.session_state.selected_case].iloc[0]
-        st.table(case_row)
+    # หากข้อมูลขึ้นที่นี่ แต่ในปฏิทินไม่ขึ้น แสดงว่าตัวกรองวันที่ผิด
+    # ให้ลองแก้ตรงนี้:
+    # เปลี่ยนจากการกรองด้วยวันที่ เป็นการแสดงรายการทั้งหมดไปก่อน
+    st.subheader("รายการทั้งหมดที่มีในระบบ")
+    st.table(df)
 # ==========================================
 # 3. REPORT (ครบทุกช่องตามชีท)
 # ==========================================
