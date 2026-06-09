@@ -125,71 +125,163 @@ if menu == "📊 Dashboard":
         st.warning("⚠️ หน้าเว็บไม่สามารถแสดงผล Dashboard ได้เนื่องจากไม่มีข้อมูลในระบบ")
 
 # ==========================================
-# 2. CALENDAR & CASE DETAIL (อิงข้อมูลเดิม)
+# 2. CALENDAR & CASE DETAIL (UI ปรับปรุงใหม่ตามรูป)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    st.title("📅 ปฏิทินติดตามงาน")
+    # --- Custom CSS สำหรับ UI สไตล์ Modern ---
+    st.markdown("""
+        <style>
+        .case-card {
+            background-color: #ffffff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid #28a745;
+            margin-bottom: 20px;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .risk-high { background-color: #ff4b4b; }
+        .risk-medium { background-color: #ffa500; }
+        .risk-low { background-color: #00cc96; }
+        .timeline-item {
+            border-left: 2px solid #ddd;
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background-color: #28a745;
+            border-radius: 50%;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     if not df.empty:
-        try:
-            date_col = df.columns[0]
-            
-            # 1. เลือกเดือน/ปี
-            col_a, col_b = st.columns(2)
-            with col_a: month = st.selectbox("เลือกเดือน", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
-            with col_b: year = st.selectbox("เลือกปี (ค.ศ.)", [2026, 2027], index=0)
+        date_col = df.columns[0]
+        
+        # ส่วนหัว: ชื่อหน้าและตัวเลือกเดือน/ปี
+        t1, t2, t3 = st.columns([2, 1, 1])
+        with t1: st.title("📅 Calendar & Case Detail")
+        with t2: month = st.selectbox("Month:", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
+        with t3: year = st.selectbox("Year:", [2024, 2025, 2026], index=2)
 
-            # 2. สร้างโครงสร้างปฏิทิน
+        # แบ่ง Layout เป็น 2 ฝั่ง (ซ้าย: ปฏิทิน, ขวา: รายละเอียด)
+        col_left, col_right = st.columns([1.8, 1])
+
+        # --- ฝั่งซ้าย: ปฏิทิน ---
+        with col_left:
             cal = calendar.Calendar(firstweekday=6)
             month_days = cal.monthdayscalendar(year, month)
             
+            # วาด Grid ปฏิทิน
             header = st.columns(7)
-            for i, name in enumerate(["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"]):
-                header[i].markdown(f"**{name}**")
+            days_abbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            for i, name in enumerate(days_abbr):
+                header[i].markdown(f"<p style='text-align:center; color:#888;'>{name}</p>", unsafe_allow_html=True)
             
+            # ตัวแปรสำหรับเก็บวันที่ผู้ใช้เลือก (Default วันนี้หรือวันแรกที่มีเคส)
+            selected_date = st.session_state.get('sel_date', datetime.now().day)
+
             for week in month_days:
                 cols = st.columns(7)
                 for i, day in enumerate(week):
                     if day != 0:
-                        # กรองข้อมูลวันที่ให้ตรงตัวแม่นยำ
-                        day_data = df[(df[date_col].dt.day == day) & 
-                                      (df[date_col].dt.month == month) & 
-                                      (df[date_col].dt.year == year)]
+                        # ตรวจสอบว่าวันนั้นมีเคสไหม
+                        day_data = df[(df[date_col].dt.day == day) & (df[date_col].dt.month == month) & (df[date_col].dt.year == year)]
                         
-                        bg_color = "#d4edda" if not day_data.empty else "#ffffff"
-                        border_style = "2px solid #28a745" if not day_data.empty else "1px solid #ccc"
+                        has_case = not day_data.empty
+                        is_selected = (day == selected_date)
                         
-                        with cols[i]:
-                            st.markdown(f"""
-                                <div style='background-color:{bg_color}; border:{border_style}; border-radius:5px; padding:10px; text-align:center;'>
-                                    <strong>{day}</strong>
-                                </div>
-                            """, unsafe_allow_html=True)
+                        # สไตล์ปุ่มปฏิทิน
+                        bg = "#28a745" if is_selected else ("#f0f2f6" if has_case else "#ffffff")
+                        txt = "#ffffff" if is_selected else "#31333F"
+                        border = "1px solid #ddd"
+                        
+                        if cols[i].button(f"{day}", key=f"day_{day}", use_container_width=True):
+                            st.session_state.sel_date = day
+                            st.rerun()
+
+                        if has_case and not is_selected:
+                            cols[i].markdown("<p style='text-align:center; margin-top:-15px; color:#28a745;'>●</p>", unsafe_allow_html=True)
                     else:
                         cols[i].write("")
 
-            # 3. เมนูดรอปดาวน์เลือกดูรายละเอียดแบบเจาะลึก
+            # รายชื่อเคสของวันที่เลือก (ด้านล่างปฏิทิน)
             st.write("---")
-            topic_list = df.iloc[:, 1].unique().tolist()
-            selected = st.selectbox("เลือกหัวข้อเพื่อดูรายละเอียด:", topic_list)
+            curr_date_str = f"{year}-{month:02d}-{st.session_state.get('sel_date', 1):02d}"
+            st.subheader(f"Selected Date Summary: {st.session_state.get('sel_date', 1)} {calendar.month_name[month]}")
             
-            if selected:
-                case = df[df.iloc[:, 1] == selected].iloc[0]
-                st.subheader("🔍 รายละเอียดเคส")
-                
-                case_display = case.copy()
-                if pd.notnull(case_display[date_col]):
-                    case_display[date_col] = case_display[date_col].strftime('%d/%m/%Y')
-                else:
-                    case_display[date_col] = 'ไม่ระบุ'
-                    
-                for col in df.columns:
-                    st.write(f"**{col}:** {case_display[col]}")
-        except Exception as e:
-            st.error(f"❌ เกิดข้อผิดพลาดในหน้าปฏิทิน: {e}")
-    else:
-        st.warning("⚠️ ไม่มีข้อมูลแสดงผลในหน้าปฏิทิน")
+            daily_cases = df[(df[date_col].dt.day == st.session_state.get('sel_date', 1)) & 
+                           (df[date_col].dt.month == month) & 
+                           (df[date_col].dt.year == year)]
+            
+            if not daily_cases.empty:
+                for idx, row in daily_cases.iterrows():
+                    if st.button(f"🚩 {row.iloc[1]}", key=f"btn_{idx}"):
+                        st.session_state.selected_case_id = idx
+            else:
+                st.info("No cases reported for this date.")
 
+        # --- ฝั่งขวา: รายละเอียดเคส (Case Detail Card) ---
+        with col_right:
+            st.subheader("📋 Detailed Case View")
+            
+            # ดึงข้อมูลเคสที่เลือก (ถ้าไม่มีให้เอาเคสแรกของวันนั้น)
+            target_idx = st.session_state.get('selected_case_id')
+            if target_idx is not None and target_idx in df.index:
+                case = df.loc[target_idx]
+            elif not daily_cases.empty:
+                case = daily_cases.iloc[0]
+            else:
+                case = None
+
+            if case is not None:
+                risk_class = f"risk-{case['Risk Level'].lower()}"
+                
+                # แสดงผลแบบ Card
+                st.markdown(f"""
+                    <div class="case-card">
+                        <p style='color:#888; font-size:12px; margin-bottom:5px;'>For {case[date_col].strftime('%b %d')}</p>
+                        <h3 style='margin-top:0;'>{case.iloc[1]}</h3>
+                        <hr>
+                        <p><strong>📍 Location:</strong> {case['Location']}</p>
+                        <p><strong>👤 Responsible:</strong> {case['Responsible Person']}</p>
+                        <p><strong>🔄 Status:</strong> {case['Status']}</p>
+                        <p><strong>🛠 Action:</strong> {case['Corrective Action']}</p>
+                        <div style='margin-top:15px;'>
+                            <span class="status-badge {risk_class}">Risk Level: {case['Risk Level']}</span>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                # Timeline จำลอง
+                st.write("---")
+                st.markdown("#### 🕒 Timeline & Activity")
+                st.markdown(f"""
+                    <div class="timeline-item">
+                        <p style='margin-bottom:0;'><strong>{case[date_col].strftime('%b %d')}</strong> - Case reported by system</p>
+                    </div>
+                    <div class="timeline-item">
+                        <p style='margin-bottom:0;'><strong>{case[date_col].strftime('%b %d')}</strong> - Assigned to {case['Responsible Person']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.write("Please select a date with a case to view details.")
+
+    else:
+        st.warning("No data available. Please check your API connection.")
 # ==========================================
 # 3. REPORT NEW CASE (อิงข้อมูลเดิม)
 # ==========================================
