@@ -5,6 +5,7 @@ import calendar
 from datetime import datetime
 import plotly.express as px
 import base64
+import textwrap
 
 # ==========================================
 # ตั้งค่าหน้าเว็บ
@@ -108,20 +109,9 @@ if menu == "📊 Dashboard":
         st.warning("⚠️ ไม่มีข้อมูลในระบบ")
 
 # ==========================================
-# 2. CALENDAR & CASE DETAIL 
+# 2. CALENDAR & CASE DETAIL
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
-    
-    # Custom CSS เพื่อความสวยงาม
-    st.markdown("""
-        <style>
-        .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; color: white; display: inline-block; }
-        .risk-high { background-color: #EF553B; }
-        .risk-medium { background-color: #FECB52; color: #333 !important; }
-        .risk-low { background-color: #00CC96; }
-        </style>
-    """, unsafe_allow_html=True)
-
     if not df.empty:
         # จับคู่ชื่อคอลัมน์ให้ยืดหยุ่นที่สุด
         date_col = df.columns[0]
@@ -192,11 +182,12 @@ elif menu == "📅 Calendar & Case Detail":
                 st.info("🟢 ไม่มีเคสความเสี่ยงในวันที่เลือก")
                 st.session_state.selected_case_idx = None
 
-        # ---------------- ฝั่งขวา (รายละเอียดเคส) ----------------
+        # ---------------- ฝั่งขวา (รายละเอียดเคส - เวอร์ชันแก้ไขการเรนเดอร์) ----------------
         with col_right:
+            st.subheader("🔍 Detailed Case View")
+            
             chosen_idx = st.session_state.get('selected_case_idx')
             
-            # โลจิกดึงเคส: ถ้าคลิกเลือกแล้วให้โชว์เคสนั้น ถ้ายังไม่คลิกแต่มีเคสในวันนั้น ให้ดึงเคสแรกมาโชว์ก่อนเลย
             if chosen_idx is not None and chosen_idx in df.index:
                 selected_case = df.loc[chosen_idx]
             elif not daily_cases.empty:
@@ -220,29 +211,25 @@ elif menu == "📅 Calendar & Case Detail":
                 status_txt = str(selected_case[status_col]) if pd.notnull(selected_case[status_col]) else "-"
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
-                # วาดการ์ดแสดงรายละเอียด
-                st.markdown(f"""
+                # ใช้ dedent ล้างย่อหน้าเพื่อบังคับ Streamlit ให้เรนเดอร์เป็นความสวยงาม ไม่ใช่โชว์โค้ดดิบ
+                card_html = textwrap.dedent(f"""
                     <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e6e6e6; box-shadow: 0 2px 5px rgba(0,0,0,0.04); margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px;">
-                            <span style="font-size: 16px; font-weight: bold; color: #111;">🔍 Detailed Case View</span>
-                            <span style="color: #888; font-size: 13px;">For {short_date}</span>
-                        </div>
-                        
                         <p style="margin: 6px 0; font-size: 14px; color: #333;"><strong>Case ID:</strong> {case_id}</p>
                         <p style="margin: 6px 0; font-size: 14px; color: #333;"><strong>Date:</strong> {display_date}</p>
                         <p style="margin: 6px 0 15px 0; font-size: 14px; color: #333;"><strong>Topic/risk finding:</strong> <span style="color:#d9534f; font-weight:600;">{selected_case[topic_col]}</span></p>
-                        
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
                         <p style="margin: 8px 0; font-size: 14px; color: #444;">📍 <strong>Location:</strong> {loc_txt}</p>
                         <p style="margin: 8px 0; font-size: 14px; color: #444;">👤 <strong>Responsible Person:</strong> {resp_txt}</p>
                         <p style="margin: 8px 0; font-size: 14px; color: #444;">🔄 <strong>Status:</strong> {status_txt}</p>
                         <p style="margin: 8px 0 15px 0; font-size: 14px; color: #444;">🛠 <strong>Corrective Action:</strong> {action_txt}</p>
-                        
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
                         <p style="margin: 6px 0; font-size: 14px; color: #111; font-weight:bold;">Risk Level: {risk_val} ({risk_icon})</p>
                     </div>
-                """, unsafe_allow_html=True)
+                """)
+                st.markdown(card_html, unsafe_allow_html=True)
                 
-                # วาดกล่อง Timeline ด้านล่างการ์ด
-                st.markdown(f"""
+                # กล่อง Timeline ด้านล่างการ์ด
+                timeline_html = textwrap.dedent(f"""
                     <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #eee;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                             <span style="font-size: 15px; font-weight: bold; color: #333;">Timeline & Activity</span>
@@ -257,7 +244,8 @@ elif menu == "📅 Calendar & Case Detail":
                             <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายให้ทีม {resp_txt}
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
+                """)
+                st.markdown(timeline_html, unsafe_allow_html=True)
             else:
                 st.markdown("""
                     <div style="background-color: #f8f9fa; padding: 40px 20px; border-radius: 8px; text-align: center; border: 1px dashed #ccc;">
