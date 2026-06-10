@@ -8,12 +8,96 @@ import base64
 import textwrap
 
 # ==========================================
-# ตั้งค่าหน้าเว็บ
+# ตั้งค่าหน้าเว็บ (รองรับการยืดหดตามอุปกรณ์)
 # ==========================================
 st.set_page_config(page_title="Risk Tracker System", page_icon="🛡️", layout="wide")
 
 # ลิงก์ Web App ของ Google Apps Script
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
+
+# ==========================================
+# ระบบ CSS อัจฉริยะ (Responsive UI สำหรับทุกอุปกรณ์)
+# ==========================================
+st.markdown("""
+    <style>
+    /* --- สไตล์หลักสำหรับการ์ดรายละเอียด (Desktop First) --- */
+    .responsive-card {
+        background-color: #ffffff; 
+        padding: 20px; 
+        border-radius: 8px; 
+        border: 1px solid #e6e6e6; 
+        box-shadow: 0 2px 5px rgba(0,0,0,0.04); 
+        margin-bottom: 20px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    .card-header-box {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        border-bottom: 1px solid #f0f0f0; 
+        padding-bottom: 12px; 
+        margin-bottom: 15px;
+    }
+    .card-title-text { font-size: 16px; font-weight: bold; color: #111; }
+    .card-date-text { color: #888; font-size: 13px; }
+    .case-p { margin: 8px 0; font-size: 14px; color: #444; line-height: 1.5; }
+    .case-p-highlight { color:#d9534f; font-weight:600; }
+    
+    /* --- สไตล์สำหรับกล่อง Timeline --- */
+    .timeline-container {
+        background-color: #f8f9fa; 
+        border-radius: 8px; 
+        padding: 15px; 
+        border: 1px solid #eee;
+    }
+    .timeline-header {
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 12px;
+    }
+    .timeline-row {
+        border-left: 2px solid #ddd; 
+        padding-left: 15px; 
+        position: relative; 
+        margin-bottom: 10px; 
+        font-size: 13px; 
+        color: #555;
+    }
+    .timeline-dot { position: absolute; left: -5px; top: 3px; color: #bbb; font-size: 10px; }
+    
+    /* กล่องกรณีไม่มีข้อมูล */
+    .empty-state-box {
+        background-color: #f8f9fa; 
+        padding: 40px 20px; 
+        border-radius: 8px; 
+        text-align: center; 
+        border: 1px dashed #ccc;
+    }
+
+    /* ==========================================
+       🔥 Responsive Media Queries (ปรับแต่งเมื่อเปิดบนมือถือ จอเล็กกว่า 768px)
+       ========================================== */
+    @media (max-width: 768px) {
+        .responsive-card { padding: 14px; margin-bottom: 15px; }
+        .card-header-box { flex-direction: column; align-items: flex-start; gap: 5px; }
+        .card-title-text { font-size: 15px; }
+        .case-p { font-size: 13px; margin: 6px 0; }
+        .timeline-container { padding: 12px; }
+        .timeline-row { font-size: 12px; }
+        
+        /* ปรับปุ่มตัวเลขปฏิทินของ Streamlit ให้ตัวเล็กลงพอดีหน้าจอมือถือ ไม่ล้นเบียดกัน */
+        .stButton > button {
+            padding: 4px 2px !important;
+            font-size: 12px !important;
+            min-height: 35px !important;
+        }
+        /* ปรับหัวข้อวัน Sun-Sat ให้เล็กลงกระชับขึ้น */
+        .calendar-day-header { font-size: 11px !important; }
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ==========================================
 # ฟังก์ชันดึงและจัดการข้อมูล
@@ -26,9 +110,7 @@ def load_data():
             data = response.json()
             if len(data) > 1:
                 df = pd.DataFrame(data[1:], columns=data[0])
-                df.columns = df.columns.str.strip()  # ลบช่องว่างที่หัวคอลัมน์
-                
-                # แปลงคอลัมน์แรกสุดให้เป็นวันที่
+                df.columns = df.columns.str.strip()
                 date_col = df.columns[0]
                 df[date_col] = pd.to_datetime(df[date_col], dayfirst=True, errors='coerce')
                 return df
@@ -41,7 +123,6 @@ def load_data():
         st.error(f"❌ เกิดปัญหาในการเชื่อมต่อข้อมูล: {e}")
         return pd.DataFrame()
 
-# โหลดข้อมูลเข้าสู่ระบบ
 df = load_data()
 
 # ==========================================
@@ -68,7 +149,7 @@ if menu == "📊 Dashboard":
             high_risk_cases = len(df[df[risk_col].astype(str).str.contains('High', case=False, na=False)])
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
-            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+            m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
             m_col1.metric("📌 เคสความเสี่ยงทั้งหมด", f"{total_cases} เคส")
             m_col2.metric("✅ ดำเนินการสำเร็จแล้ว", f"{completed_cases} เคส")
             m_col3.metric("🚨 เคสวิกฤต (High Risk)", f"{high_risk_cases} เคส")
@@ -76,7 +157,7 @@ if menu == "📊 Dashboard":
             
             st.markdown("---")
             
-            # --- Interactive Charts ---
+            # --- Interactive Charts (Plotly รองรับการหดตามจออัตโนมัติ) ---
             g_col1, g_col2 = st.columns(2)
             with g_col1:
                 st.subheader("💡 สัดส่วนสถานะการดำเนินงาน")
@@ -97,7 +178,6 @@ if menu == "📊 Dashboard":
                 
             st.markdown("---")
             
-            # --- Smart Data Table ---
             st.subheader("📋 รายการบันทึกความเสี่ยงล่าสุด")
             df_table = df.copy()
             df_table[date_col] = df_table[date_col].dt.strftime('%d/%m/%Y').fillna('ไม่ระบุ')
@@ -109,11 +189,10 @@ if menu == "📊 Dashboard":
         st.warning("⚠️ ไม่มีข้อมูลในระบบ")
 
 # ==========================================
-# 2. CALENDAR & CASE DETAIL
+# 2. CALENDAR & CASE DETAIL (เวอร์ชัน Responsive รองรับทุกจอ)
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     if not df.empty:
-        # จับคู่ชื่อคอลัมน์ให้ยืดหยุ่นที่สุด
         date_col = df.columns[0]
         topic_col = 'Topic/risk finding' if 'Topic/risk finding' in df.columns else df.columns[1]
         loc_col = 'Location' if 'Location' in df.columns else df.columns[2]
@@ -122,40 +201,39 @@ elif menu == "📅 Calendar & Case Detail":
         action_col = 'Corrective Action' if 'Corrective Action' in df.columns else df.columns[5]
         risk_col = 'Risk Level' if 'Risk Level' in df.columns else df.columns[-1]
 
-        # ส่วนหัวเลือก เดือน/ปี
+        # เลือก เดือน/ปี (ปรับโครงสร้างคอลัมน์ให้กระชับเมื่ออยู่บนโมบายล์)
         t1, t2, t3 = st.columns([2, 1, 1])
-        with t1: st.title("📅 Calendar & Case Detail")
+        with t1: st.title("📅 Calendar")
         with t2: month = st.selectbox("Month:", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
         with t3: year = st.selectbox("Year:", [2025, 2026, 2027], index=1)
 
-        sheet_year = year + 543 # คำนวณปี พ.ศ. เผื่อไว้ใช้เทียบ
-        col_left, col_right = st.columns([1.7, 1]) # แบ่งฝั่งจอ 65:35
+        sheet_year = year + 543 
+        
+        # คอลัมน์หลักซ้ายขวา (บนมือถือจะตัดลงมาต่อแถวแนวตั้งให้อัตโนมัติด้วยคำสั่งดั้งเดิมของ Streamlit)
+        col_left, col_right = st.columns([1.6, 1]) 
 
-        # เช็ควันปัจจุบันใน Session
         _, num_days = calendar.monthrange(year, month)
         if 'sel_day' not in st.session_state or st.session_state.sel_day > num_days:
             st.session_state.sel_day = 1
 
-        # ---------------- ฝั่งซ้าย (ปฏิทิน) ----------------
+        # ---------------- ฝั่งซ้าย (ปฏิทินอัจฉริยะ) ----------------
         with col_left:
             cal = calendar.Calendar(firstweekday=6)
             month_days = cal.monthdayscalendar(year, month)
             
             header = st.columns(7)
             for i, name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
-                header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#666; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
+                header[i].markdown(f"<p class='calendar-day-header' style='text-align:center; font-weight:bold; color:#666; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
             
             for week in month_days:
                 cols = st.columns(7)
                 for i, day in enumerate(week):
                     if day != 0:
-                        # กรองข้อมูลวันที่มีเคส (รองรับทั้ง พ.ศ. และ ค.ศ.)
                         is_match = (df[date_col].dt.day == day) & (df[date_col].dt.month == month) & ((df[date_col].dt.year == year) | (df[date_col].dt.year == sheet_year))
                         day_data = df[is_match]
                         
                         has_case = not day_data.empty
                         is_selected = (day == st.session_state.sel_day)
-                        
                         btn_type = "primary" if is_selected else "secondary"
                         
                         if cols[i].button(f"{day}", key=f"d_{day}", type=btn_type, use_container_width=True):
@@ -168,7 +246,6 @@ elif menu == "📅 Calendar & Case Detail":
                     else:
                         cols[i].write("")
 
-            # สรุปรายการเคสด้านล่างปฏิทิน
             st.markdown("---")
             st.subheader(f"Selected Date Summary: {calendar.month_name[month]} {st.session_state.sel_day}, {year}")
             
@@ -182,10 +259,9 @@ elif menu == "📅 Calendar & Case Detail":
                 st.info("🟢 ไม่มีเคสความเสี่ยงในวันที่เลือก")
                 st.session_state.selected_case_idx = None
 
-        # ---------------- ฝั่งขวา (รายละเอียดเคส - เวอร์ชันแก้ไขการเรนเดอร์) ----------------
+        # ---------------- ฝั่งขวา (รายละเอียดเคส - ใช้สไตล์แบบ CSS Class) ----------------
         with col_right:
             st.subheader("🔍 Detailed Case View")
-            
             chosen_idx = st.session_state.get('selected_case_idx')
             
             if chosen_idx is not None and chosen_idx in df.index:
@@ -196,7 +272,6 @@ elif menu == "📅 Calendar & Case Detail":
                 selected_case = None
 
             if selected_case is not None:
-                # สร้าง ID และรูปแบบข้อมูล
                 formatted_date_id = selected_case[date_col].strftime('%Y-%m%d')
                 case_id = f"RT{formatted_date_id}"
                 
@@ -211,36 +286,39 @@ elif menu == "📅 Calendar & Case Detail":
                 status_txt = str(selected_case[status_col]) if pd.notnull(selected_case[status_col]) else "-"
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
-                # ใช้ dedent ล้างย่อหน้าเพื่อบังคับ Streamlit ให้เรนเดอร์เป็นความสวยงาม ไม่ใช่โชว์โค้ดดิบ
+                # เรนเดอร์การ์ดรายละเอียดผ่าน CSS Class ที่ยืดหยุ่นตามหน้าจออุปกรณ์
                 card_html = textwrap.dedent(f"""
-                    <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e6e6e6; box-shadow: 0 2px 5px rgba(0,0,0,0.04); margin-bottom: 20px;">
-                        <p style="margin: 6px 0; font-size: 14px; color: #333;"><strong>Case ID:</strong> {case_id}</p>
-                        <p style="margin: 6px 0; font-size: 14px; color: #333;"><strong>Date:</strong> {display_date}</p>
-                        <p style="margin: 6px 0 15px 0; font-size: 14px; color: #333;"><strong>Topic/risk finding:</strong> <span style="color:#d9534f; font-weight:600;">{selected_case[topic_col]}</span></p>
+                    <div class="responsive-card">
+                        <div class="card-header-box">
+                            <span class="card-title-text">Case ID: {case_id}</span>
+                            <span class="card-date-text">For {short_date}</span>
+                        </div>
+                        <p class="case-p"><strong>Date:</strong> {display_date}</p>
+                        <p class="case-p"><strong>Topic/risk finding:</strong> <span class="case-p-highlight">{selected_case[topic_col]}</span></p>
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
-                        <p style="margin: 8px 0; font-size: 14px; color: #444;">📍 <strong>Location:</strong> {loc_txt}</p>
-                        <p style="margin: 8px 0; font-size: 14px; color: #444;">👤 <strong>Responsible Person:</strong> {resp_txt}</p>
-                        <p style="margin: 8px 0; font-size: 14px; color: #444;">🔄 <strong>Status:</strong> {status_txt}</p>
-                        <p style="margin: 8px 0 15px 0; font-size: 14px; color: #444;">🛠 <strong>Corrective Action:</strong> {action_txt}</p>
+                        <p class="case-p">📍 <strong>Location:</strong> {loc_txt}</p>
+                        <p class="case-p">👤 <strong>Responsible Person:</strong> {resp_txt}</p>
+                        <p class="case-p">🔄 <strong>Status:</strong> {status_txt}</p>
+                        <p class="case-p">🛠 <strong>Corrective Action:</strong> {action_txt}</p>
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
-                        <p style="margin: 6px 0; font-size: 14px; color: #111; font-weight:bold;">Risk Level: {risk_val} ({risk_icon})</p>
+                        <p class="case-p" style="font-weight:bold; color:#111;">Risk Level: {risk_val} {risk_icon}</p>
                     </div>
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # กล่อง Timeline ด้านล่างการ์ด
+                # เรนเดอร์กล่อง Timeline
                 timeline_html = textwrap.dedent(f"""
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #eee;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 15px; font-weight: bold; color: #333;">Timeline & Activity</span>
-                            <span style="color: #888; font-size: 14px;">✏️ 🖨️ 📥</span>
+                    <div class="timeline-container">
+                        <div class="timeline-header">
+                            <span style="font-size: 14px; font-weight: bold; color: #333;">Timeline & Activity</span>
+                            <span style="color: #888; font-size: 13px;">✏️ 🖨️ 📥</span>
                         </div>
-                        <div style="border-left: 2px solid #ddd; padding-left: 15px; position: relative; margin-bottom: 10px; font-size: 13px; color: #555;">
-                            <span style="position: absolute; left: -5px; top: 3px; color: #bbb; font-size: 10px;">●</span>
+                        <div class="timeline-row">
+                            <span class="timeline-dot">●</span>
                             <strong>{short_date}, 09:00</strong> - บันทึกข้อมูลความเสี่ยงเข้าระบบเสร็จสิ้น
                         </div>
-                        <div style="border-left: 2px solid #ddd; padding-left: 15px; position: relative; font-size: 13px; color: #555;">
-                            <span style="position: absolute; left: -5px; top: 3px; color: #bbb; font-size: 10px;">●</span>
+                        <div class="timeline-row">
+                            <span class="timeline-dot">●</span>
                             <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายให้ทีม {resp_txt}
                         </div>
                     </div>
@@ -248,7 +326,7 @@ elif menu == "📅 Calendar & Case Detail":
                 st.markdown(timeline_html, unsafe_allow_html=True)
             else:
                 st.markdown("""
-                    <div style="background-color: #f8f9fa; padding: 40px 20px; border-radius: 8px; text-align: center; border: 1px dashed #ccc;">
+                    <div class="empty-state-box">
                         <h3 style="color: #888; margin-bottom: 10px;">🔍</h3>
                         <p style="color: #666; font-size: 14px;">Select a date with a green dot on the calendar<br>to view details.</p>
                     </div>
