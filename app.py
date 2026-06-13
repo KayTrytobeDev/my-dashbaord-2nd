@@ -42,7 +42,9 @@ st.markdown("""
     .card-title-text { font-size: 16px; font-weight: bold; color: #111; }
     .card-date-text { color: #888; font-size: 13px; }
     .case-p { margin: 8px 0; font-size: 14px; color: #444; line-height: 1.5; }
-    .case-p-highlight { color:#d9534f; font-weight:600; }
+    
+    /* 🔵 เปลี่ยนสี Highlight ของ Topic เป็นสีน้ำเงิน */
+    .case-p-highlight { color:#0056b3; font-weight:600; }
     
     /* --- สไตล์สำหรับกล่อง Timeline --- */
     .timeline-container {
@@ -170,7 +172,7 @@ if menu == "📊 Dashboard":
                     'Complete': '#00CC96',
                     'กำลังดำเนินการ': '#FF8C00',   # สีส้ม
                     'In Progress': '#FF8C00',
-                    'รอดำเนินการ': '#EF553B',      # สีแดง (เปลี่ยนจากเหลือง)
+                    'รอดำเนินการ': '#EF553B',      # สีแดง 
                     'Pending': '#EF553B',
                     'ไม่พบประเด็น': '#9E9E9E',      # สีเทา
                     'No Issue': '#9E9E9E'
@@ -340,6 +342,17 @@ elif menu == "📅 Calendar & Case Detail":
                 status_txt = str(selected_case[status_col]) if pd.notnull(selected_case[status_col]) else "-"
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
+                # 🎨 ตรวจสอบคำใน status_txt เพื่อกำหนดสีให้ตรงกับหน้า Dashboard
+                display_color = "#333333" # สีตั้งต้น
+                if "เรียบร้อย" in status_txt or "Complete" in status_txt:
+                    display_color = "#00CC96" # สีเขียว
+                elif "รอดำเนินการ" in status_txt or "Pending" in status_txt:
+                    display_color = "#EF553B" # สีแดง
+                elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt:
+                    display_color = "#FF8C00" # สีส้ม
+                elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt:
+                    display_color = "#9E9E9E" # สีเทา
+
                 # ใช้คลาส CSS อัจฉริยะตัดคำอัตโนมัติป้องกันตัวหนังสือทะลุกรอบในจอโทรศัพท์
                 card_html = textwrap.dedent(f"""
                     <div class="responsive-card">
@@ -352,7 +365,7 @@ elif menu == "📅 Calendar & Case Detail":
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
                         <p class="case-p">📍 <strong>Location:</strong> {loc_txt}</p>
                         <p class="case-p">👤 <strong>Responsible Person:</strong> {resp_txt}</p>
-                        <p class="case-p">🔄 <strong>Status:</strong> {status_txt}</p>
+                        <p class="case-p">🔄 <strong>Status:</strong> <span style="color: {display_color}; font-weight: bold;">{status_txt}</span></p>
                         <p class="case-p">🛠 <strong>Corrective Action:</strong> {action_txt}</p>
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0;">
                         <p class="case-p" style="font-weight:bold; color:#111;">Risk Level: {risk_val} {risk_icon}</p>
