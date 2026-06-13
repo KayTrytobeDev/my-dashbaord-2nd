@@ -144,15 +144,15 @@ if menu == "📊 Dashboard":
             
             # --- KPI Cards ---
             total_cases = len(df)
-            completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete', na=False, case=False)])
+            completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
             high_risk_cases = len(df[df[risk_col].astype(str).str.contains('High', case=False, na=False)])
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
             m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
             m_col1.metric("📌 เคสความเสี่ยงทั้งหมด", f"{total_cases} เคส")
-            m_col2.metric("✅ ดำเนินการสำเร็จแล้ว", f"{completed_cases} เคส")
+            m_col2.metric("✅ ดำเนินการสำเร็จ/ไม่พบประเด็น", f"{completed_cases} เคส")
             m_col3.metric("🚨 เคสวิกฤต (High Risk)", f"{high_risk_cases} เคส")
-            m_col4.metric("📈 อัตราการแก้ปัญหา", f"{success_rate:.1f}%")
+            m_col4.metric("📈 อัตราความสำเร็จภาพรวม", f"{success_rate:.1f}%")
             
             st.markdown("---")
             
@@ -162,7 +162,27 @@ if menu == "📊 Dashboard":
                 st.subheader("💡 สัดส่วนสถานะการดำเนินงาน")
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                fig_pie = px.pie(status_counts, values='Count', names='Status', hole=0.5, color_discrete_sequence=px.colors.qualitative.Safe)
+                
+                # 🎨 กำหนดแผนที่สีล็อกสถานะ
+                status_colors = {
+                    'เรียบร้อย': '#00CC96',        # สีเขียว
+                    'Complete': '#00CC96',
+                    'กำลังดำเนินการ': '#FF8C00',   # สีส้ม
+                    'In Progress': '#FF8C00',
+                    'รอดำเนินการ': '#FECB52',      # สีเหลือง
+                    'Pending': '#FECB52',
+                    'ไม่พบประเด็น': '#9E9E9E',      # สีเทา
+                    'No Issue': '#9E9E9E'
+                }
+                
+                fig_pie = px.pie(
+                    status_counts, 
+                    values='Count', 
+                    names='Status', 
+                    hole=0.5, 
+                    color='Status',
+                    color_discrete_map=status_colors
+                )
                 fig_pie.update_traces(textposition='inside', textinfo='percent+label')
                 fig_pie.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10))
                 st.plotly_chart(fig_pie, use_container_width=True)
@@ -377,7 +397,10 @@ elif menu == "📝 Report New Case":
         f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic/risk finding)")
         f_loc = st.text_input("สถานที่ (Location)")
         f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
-        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "เรียบร้อย"])
+        
+        # เพิ่มตัวเลือก "ไม่พบประเด็น" ในฟอร์มบันทึกด้วย
+        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "เรียบร้อย", "ไม่พบประเด็น"])
+        
         f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
         
