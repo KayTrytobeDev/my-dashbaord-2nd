@@ -163,14 +163,15 @@ if menu == "📊 Dashboard":
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 
-                # 🎨 กำหนดแผนที่สีล็อกสถานะ
+                # 🎨 กำหนดแผนที่สีล็อกสถานะตามที่ขอ (อัปเดตใหม่)
                 status_colors = {
+                    'ดำเนินการเรียบร้อย': '#00CC96', # สีเขียว
                     'เรียบร้อย': '#00CC96',        # สีเขียว
                     'Complete': '#00CC96',
                     'กำลังดำเนินการ': '#FF8C00',   # สีส้ม
                     'In Progress': '#FF8C00',
-                    'รอดำเนินการ': '#FECB52',      # สีเหลือง
-                    'Pending': '#FECB52',
+                    'รอดำเนินการ': '#EF553B',      # สีแดง (เปลี่ยนจากเหลือง)
+                    'Pending': '#EF553B',
                     'ไม่พบประเด็น': '#9E9E9E',      # สีเทา
                     'No Issue': '#9E9E9E'
                 }
@@ -398,8 +399,8 @@ elif menu == "📝 Report New Case":
         f_loc = st.text_input("สถานที่ (Location)")
         f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
         
-        # เพิ่มตัวเลือก "ไม่พบประเด็น" ในฟอร์มบันทึกด้วย
-        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "เรียบร้อย", "ไม่พบประเด็น"])
+        # เพิ่มตัวเลือก "ไม่พบประเด็น" และ "ดำเนินการเรียบร้อย" ให้ตรงกับข้อมูล
+        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย", "ไม่พบประเด็น"])
         
         f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
