@@ -150,21 +150,21 @@ if menu == "📊 Dashboard":
             # 1. เคสที่เสร็จสิ้น (เรียบร้อย หรือ ไม่พบประเด็น)
             completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
             
-            # 2. เคสคงค้าง (นับแค่ รอดำเนินการ หรือ กำลังดำเนินการ เท่านั้น ไม่นับ ไม่พบประเด็น)
-            # ใช้เครื่องหมาย | คือ OR
-            pending_cases = len(df[
-                (df[status_col].astype(str).str.contains('รอดำเนินการ', na=False)) | 
-                (df[status_col].astype(str).str.contains('กำลังดำเนินการ', na=False)) |
-                (df[status_col].astype(str).str.contains('Pending', na=False)) |
-                (df[status_col].astype(str).str.contains('In Progress', na=False))
-            ])
+            # 2. เคสคงค้าง (ต้องมีคำว่า รอดำเนินการ/กำลังดำเนินการ และ "ต้องไม่มี" คำว่า ไม่พบประเด็น)
+            # เราใช้เครื่องหมาย ~ เพื่อบอกว่า "ไม่เอา"
+            is_pending_keywords = status_str.str.contains('รอดำเนินการ|กำลังดำเนินการ|Pending|In Progress', na=False, case=False)
+            is_not_issue = ~status_str.str.contains('ไม่พบประเด็น|No Issue', na=False, case=False)
             
+            pending_cases = len(df[is_pending_keywords & is_not_issue])
+            
+            total_cases = len(df)
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
+            # แสดงผล Metric
             m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
             m_col1.metric("📌 เคสความเสี่ยงทั้งหมด", f"{total_cases} เคส")
-            m_col2.metric("✅ ดำเนินการสำเร็จ/ไม่พบประเด็น", f"{completed_cases} เคส")
-            m_col3.metric("⏳ คงค้าง", f"{pending_cases} เคส") # ตอนนี้ตัวเลขจะถูกต้องแล้วครับ
+            m_col2.metric("✅ สำเร็จ/ไม่พบประเด็น", f"{completed_cases} เคส")
+            m_col3.metric("⏳ คงค้าง", f"{pending_cases} เคส") # ค่านี้จะแม่นยำขึ้นแล้วครับ
             m_col4.metric("📈 อัตราความสำเร็จภาพรวม", f"{success_rate:.1f}%")
             
             st.markdown("---")
