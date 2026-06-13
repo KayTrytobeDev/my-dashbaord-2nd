@@ -147,13 +147,16 @@ if menu == "📊 Dashboard":
             # --- KPI Cards ---
             total_cases = len(df)
             completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
-            high_risk_cases = len(df[df[risk_col].astype(str).str.contains('High', case=False, na=False)])
+            
+            # 🔄 เปลี่ยนแปลงการคำนวณจากเคสวิกฤต เป็น "เคสคงค้าง" (รอดำเนินการ + กำลังดำเนินการ)
+            pending_cases = len(df[df[status_col].astype(str).str.contains('รอดำเนินการ|กำลังดำเนินการ|Pending|In Progress', na=False, case=False)])
+            
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
             m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
             m_col1.metric("📌 เคสความเสี่ยงทั้งหมด", f"{total_cases} เคส")
             m_col2.metric("✅ ดำเนินการสำเร็จ/ไม่พบประเด็น", f"{completed_cases} เคส")
-            m_col3.metric("🚨 เคสวิกฤต (High Risk)", f"{high_risk_cases} เคส")
+            m_col3.metric("⏳ คงค้าง", f"{pending_cases} เคส") # 🔄 เปลี่ยนชื่อและข้อมูลตรงนี้
             m_col4.metric("📈 อัตราความสำเร็จภาพรวม", f"{success_rate:.1f}%")
             
             st.markdown("---")
@@ -165,7 +168,7 @@ if menu == "📊 Dashboard":
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 
-                # 🎨 กำหนดแผนที่สีล็อกสถานะตามที่ขอ (อัปเดตใหม่)
+                # 🎨 กำหนดแผนที่สีล็อกสถานะ
                 status_colors = {
                     'ดำเนินการเรียบร้อย': '#00CC96', # สีเขียว
                     'เรียบร้อย': '#00CC96',        # สีเขียว
