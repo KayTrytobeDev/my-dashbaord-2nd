@@ -110,7 +110,7 @@ st.markdown("""
 # 3. HELPER FUNCTIONS (ระบบจัดการรูปภาพ)
 # ==========================================
 def compress_image_to_b64(uploaded_file):
-    """บีบอัดภาพเพื่อประหยัดพื้นที่และส่งข้อมูลไวขึ้น"""
+    """ปรับปรุงใหม่: เพิ่มความละเอียดภาพให้คมชัดสะใจ ไม่แตกเบลอ"""
     if uploaded_file is None:
         return ""
     try:
@@ -118,9 +118,12 @@ def compress_image_to_b64(uploaded_file):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+        # ✅ 1. เพิ่มขนาดภาพขยับเป็น 1024x1024 พิกเซล (ชัดระดับ HD)
+        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
         buffered = io.BytesIO()
-        img.save(buffered, format="JPEG", quality=20) 
+        
+        # ✅ 2. เพิ่มคุณภาพความคมชัดขึ้นเป็น 75% (ภาพเนียน ไม่แตกเป็นเม็ด)
+        img.save(buffered, format="JPEG", quality=75) 
         return base64.b64encode(buffered.getvalue()).decode()
     except Exception:
         return ""
