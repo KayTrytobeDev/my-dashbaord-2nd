@@ -52,6 +52,7 @@ st.markdown("""
         border-radius: 8px; 
         padding: 15px; 
         border: 1px solid #eee;
+        margin-top: 20px;
     }
     .timeline-header {
         display: flex; 
@@ -79,7 +80,7 @@ st.markdown("""
     }
 
     /* ==========================================
-       🔥 Media Queries สำหรับ iPhone / หน้าจอมือถือ (< 768px)
+        🔥 Media Queries สำหรับ iPhone / หน้าจอมือถือ (< 768px)
        ========================================== */
     @media (max-width: 768px) {
         .responsive-card { padding: 14px; margin-bottom: 15px; }
@@ -156,7 +157,7 @@ if menu == "📊 Dashboard":
             m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
             m_col1.metric("📌 เคสความเสี่ยงทั้งหมด", f"{total_cases} เคส")
             m_col2.metric("✅ ดำเนินการสำเร็จ/ไม่พบประเด็น", f"{completed_cases} เคส")
-            m_col3.metric("⏳ คงค้าง", f"{pending_cases} เคส") # 🔄 เปลี่ยนชื่อและข้อมูลตรงนี้
+            m_col3.metric("⏳ คงค้าง", f"{pending_cases} เคส") 
             m_col4.metric("📈 อัตราความสำเร็จภาพรวม", f"{success_rate:.1f}%")
             
             st.markdown("---")
@@ -376,69 +377,8 @@ elif menu == "📅 Calendar & Case Detail":
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # กล่องประวัติ Timeline
-                timeline_html = textwrap.dedent(f"""
-                    <div class="timeline-container">
-                        <div class="timeline-header">
-                            <span style="font-size: 14px; font-weight: bold; color: #333;">Timeline & Activity</span>
-                            <span style="color: #888; font-size: 13px;">✏️ 🖨️ 📥</span>
-                        </div>
-                        <div class="timeline-row">
-                            <span class="timeline-dot">●</span>
-                            <strong>{short_date}, 09:00</strong> - บันทึกข้อมูลความเสี่ยงเข้าระบบเสร็จสิ้น
-                        </div>
-                        <div class="timeline-row">
-                            <span class="timeline-dot">●</span>
-                            <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายให้ทีม {resp_txt}
-                        </div>
-                    </div>
-                """)
-                st.markdown(timeline_html, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="empty-state-box">
-                        <h3 style="color: #888; margin-bottom: 10px;">🔍</h3>
-                        <p style="color: #666; font-size: 14px;">No case selected.<br>Please choose a case from the left panel.</p>
-                    </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.warning("⚠️ ไม่มีข้อมูลเพื่อแสดงผลบนปฏิทิน")
-
-# ==========================================
-# MODULE 3: REPORT NEW CASE (หน้าฟอร์มรายงาน)
-# ==========================================
-elif menu == "📝 Report New Case":
-    st.title("📝 รายงานเคสความเสี่ยงใหม่")
-    with st.form("risk_form", clear_on_submit=True):
-        f_date = st.date_input("วันที่ (Date)")
-        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic/risk finding)")
-        f_loc = st.text_input("สถานที่ (Location)")
-        f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
-        
-        # เพิ่มตัวเลือก "ไม่พบประเด็น" และ "ดำเนินการเรียบร้อย" ให้ตรงกับข้อมูล
-        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย", "ไม่พบประเด็น"])
-        
-        f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
-        f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
-        
-        up_before = st.file_uploader("รูปก่อนแก้ไข")
-        up_after = st.file_uploader("รูปหลังแก้ไข")
-        
-        if st.form_submit_button("🚀 บันทึกข้อมูล"):
-            try:
-                payload = {
-                    "date": str(f_date), "topic": f_topic, "location": f_loc,
-                    "responsible": f_resp, "status": f_status, "action": f_action, "risk": f_risk,
-                    "imgBeforeBase64": base64.b64encode(up_before.read()).decode() if up_before else "",
-                    "imgBeforeName": up_before.name if up_before else "",
-                    "imgAfterBase64": base64.b64encode(up_after.read()).decode() if up_after else "",
-                    "imgAfterName": up_after.name if up_after else ""
-                }
-                res = requests.post(API_URL, json=payload, timeout=15)
-                if res.status_code == 200: 
-                    st.success("🎉 บันทึกข้อมูลสำเร็จ! อัปเดตในระบบเรียบร้อย")
-                    st.cache_data.clear() 
-                else:
-                    st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
-            except Exception as e:
-                st.error(f"❌ เกิดข้อผิดพลาดขณะส่งข้อมูล: {e}")
+                # --- ส่วนแสดงผลรูปภาพ (ที่เพิ่มใหม่) ---
+                st.markdown("<h4 style='color: #444; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
+                
+                # เช็กตำแหน่งคอลัมน์รูปภาพ (สมมติว่าเป็นคอลัมน์ที่ 8 และ 9, ปรับแก้ได้ถ้าหัวตารางขยับ)
+                img_before_col = df.columns[8] if len(df.columns)
