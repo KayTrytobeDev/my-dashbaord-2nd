@@ -381,4 +381,91 @@ elif menu == "📅 Calendar & Case Detail":
                 st.markdown("<h4 style='color: #444; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
                 # เช็กตำแหน่งคอลัมน์รูปภาพ (สมมติว่าเป็นคอลัมน์ที่ 8 และ 9, ปรับแก้ได้ถ้าหัวตารางขยับ)
-                img_before_col = df.columns[8] if len(df.columns)
+                img_before_col = df.columns[8] if len(df.columns) > 8 else None 
+                img_after_col = df.columns[9] if len(df.columns) > 9 else None  
+
+                img_b_url = str(selected_case[img_before_col]) if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
+                img_a_url = str(selected_case[img_after_col]) if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
+
+                i_col1, i_col2 = st.columns(2)
+                
+                with i_col1:
+                    if img_b_url and img_b_url.startswith('http'):
+                        st.image(img_b_url, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
+                    else:
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
+
+                with i_col2:
+                    if img_a_url and img_a_url.startswith('http'):
+                        st.image(img_a_url, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
+                    else:
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
+                
+                st.markdown("---")
+                
+                # กล่องประวัติ Timeline
+                timeline_html = textwrap.dedent(f"""
+                    <div class="timeline-container">
+                        <div class="timeline-header">
+                            <span style="font-size: 14px; font-weight: bold; color: #333;">Timeline & Activity</span>
+                            <span style="color: #888; font-size: 13px;">✏️ 🖨️ 📥</span>
+                        </div>
+                        <div class="timeline-row">
+                            <span class="timeline-dot">●</span>
+                            <strong>{short_date}, 09:00</strong> - บันทึกข้อมูลความเสี่ยงเข้าระบบเสร็จสิ้น
+                        </div>
+                        <div class="timeline-row">
+                            <span class="timeline-dot">●</span>
+                            <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายให้ทีม {resp_txt}
+                        </div>
+                    </div>
+                """)
+                st.markdown(timeline_html, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="empty-state-box">
+                        <h3 style="color: #888; margin-bottom: 10px;">🔍</h3>
+                        <p style="color: #666; font-size: 14px;">No case selected.<br>Please choose a case from the left panel.</p>
+                    </div>
+                """, unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ ไม่มีข้อมูลเพื่อแสดงผลบนปฏิทิน")
+
+# ==========================================
+# MODULE 3: REPORT NEW CASE (หน้าฟอร์มรายงาน)
+# ==========================================
+elif menu == "📝 Report New Case":
+    st.title("📝 รายงานเคสความเสี่ยงใหม่")
+    with st.form("risk_form", clear_on_submit=True):
+        f_date = st.date_input("วันที่ (Date)")
+        f_topic = st.text_input("หัวข้อประเด็นความเสี่ยง (Topic/risk finding)")
+        f_loc = st.text_input("สถานที่ (Location)")
+        f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
+        
+        # เพิ่มตัวเลือก "ไม่พบประเด็น" และ "ดำเนินการเรียบร้อย" ให้ตรงกับข้อมูล
+        f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย", "ไม่พบประเด็น"])
+        
+        f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
+        f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
+        
+        up_before = st.file_uploader("รูปก่อนแก้ไข")
+        up_after = st.file_uploader("รูปหลังแก้ไข")
+        
+        if st.form_submit_button("🚀 บันทึกข้อมูล"):
+            try:
+                payload = {
+                    "date": str(f_date), "topic": f_topic, "location": f_loc,
+                    "responsible": f_resp, "status": f_status, "action": f_action, "risk": f_risk,
+                    "imgBeforeBase64": base64.b64encode(up_before.read()).decode() if up_before else "",
+                    "imgBeforeName": up_before.name if up_before else "",
+                    "imgAfterBase64": base64.b64encode(up_after.read()).decode() if up_after else "",
+                    "imgAfterName": up_after.name if up_after else ""
+                }
+                res = requests.post(API_URL, json=payload, timeout=15)
+                if res.status_code == 200: 
+                    st.success("🎉 บันทึกข้อมูลสำเร็จ! อัปเดตในระบบเรียบร้อย")
+                    st.cache_data.clear() 
+                else:
+                    st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
+            except Exception as e:
+                st.error(f"❌ เกิดข้อผิดพลาดขณะส่งข้อมูล: {e}")
