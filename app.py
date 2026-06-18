@@ -147,14 +147,15 @@ def extract_and_convert_url(raw_text):
     if match_img:
         url = match_img.group(1)
         
-    # แปลงลิงก์ Google Drive ให้เป็นลิงก์ตรงสำหรับโชว์รูป
+  # แปลงลิงก์ Google Drive ให้เป็นลิงก์ตรงสำหรับโชว์รูป
     if "drive.google.com/file/d/" in url:
         match_id = re.search(r'file/d/([a-zA-Z0-9_-]+)', url)
         if match_id:
             file_id = match_id.group(1)
-            return f"https://drive.google.com/uc?export=view&id={file_id}"
+            # ❌ ลบบรรทัดเดิมทิ้ง: return f"https://drive.google.com/uc?export=view&id={file_id}"
             
-    return url
+            # ✅ ใส่บรรทัดใหม่นี้แทน (ดึงแบบ Thumbnail ทะลุบล็อก):
+            return f"https://drive.google.com/thumbnail?id={file_id}&sz=w800"
 
 # ==========================================
 # 4. DATA CORE
