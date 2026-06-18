@@ -15,7 +15,7 @@ from PIL import Image
 st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layout="wide")
 
 # 📌 นำลิงก์ Web App ตัวใหม่ที่เพิ่ง Deploy มาวางตรงนี้ครับ
-API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
+API_URL = "https://script.google.com/macros/s/AKfycbz_wuFoFx8ZOwvcQDkQGCP0gDhNv3N092dD4y4vtO2a6rO593q9p_GpRAsmo8Mh9DQ/exec"
 
 # ==========================================
 # 2. PREMIUM DARK MODE CSS
