@@ -148,10 +148,7 @@ if menu == "📊 Dashboard":
             # --- KPI Cards ---
             total_cases = len(df)
             completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
-            
-            # 🔄 เปลี่ยนแปลงการคำนวณจากเคสวิกฤต เป็น "เคสคงค้าง" (รอดำเนินการ + กำลังดำเนินการ)
             pending_cases = len(df[df[status_col].astype(str).str.contains('รอดำเนินการ|กำลังดำเนินการ|Pending|In Progress', na=False, case=False)])
-            
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
             m_col1, m_col2, m_col3, m_col4 = st.columns([1, 1, 1, 1])
@@ -162,23 +159,22 @@ if menu == "📊 Dashboard":
             
             st.markdown("---")
             
-            # --- กราฟวิเคราะห์ (สไตล์ยืดหยุ่นตามหน้าจออัตโนมัติ) ---
+            # --- กราฟวิเคราะห์ ---
             g_col1, g_col2 = st.columns(2)
             with g_col1:
                 st.subheader("💡 สัดส่วนสถานะการดำเนินงาน")
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 
-                # 🎨 กำหนดแผนที่สีล็อกสถานะ
                 status_colors = {
-                    'ดำเนินการเรียบร้อย': '#00CC96', # สีเขียว
-                    'เรียบร้อย': '#00CC96',        # สีเขียว
+                    'ดำเนินการเรียบร้อย': '#00CC96',
+                    'เรียบร้อย': '#00CC96',
                     'Complete': '#00CC96',
-                    'กำลังดำเนินการ': '#FF8C00',   # สีส้ม
+                    'กำลังดำเนินการ': '#FF8C00',
                     'In Progress': '#FF8C00',
-                    'รอดำเนินการ': '#EF553B',      # สีแดง 
+                    'รอดำเนินการ': '#EF553B',
                     'Pending': '#EF553B',
-                    'ไม่พบประเด็น': '#9E9E9E',      # สีเทา
+                    'ไม่พบประเด็น': '#9E9E9E',
                     'No Issue': '#9E9E9E'
                 }
                 
@@ -216,7 +212,7 @@ if menu == "📊 Dashboard":
         st.warning("⚠️ ไม่มีข้อมูลในระบบ")
 
 # ==========================================
-# MODULE 2: CALENDAR & CASE DETAIL (หน้าจออัจฉริยะรองรับ iPhone)
+# MODULE 2: CALENDAR & CASE DETAIL 
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     if not df.empty:
@@ -228,7 +224,6 @@ elif menu == "📅 Calendar & Case Detail":
         action_col = 'Corrective Action' if 'Corrective Action' in df.columns else df.columns[5]
         risk_col = 'Risk Level' if 'Risk Level' in df.columns else df.columns[-1]
 
-        # แถบควบคุมเวลาด้านบน
         t1, t2, t3 = st.columns([2, 1, 1])
         with t1: st.title("📅 Calendar & Case")
         with t2: month = st.selectbox("Month:", range(1, 13), index=datetime.now().month-1, format_func=lambda x: calendar.month_name[x])
@@ -236,7 +231,6 @@ elif menu == "📅 Calendar & Case Detail":
 
         sheet_year = year + 543 
 
-        # สวิตช์สลับโหมดตามขนาดอุปกรณ์เพื่อป้องกันตารางล้นใน iPhone
         view_mode = st.radio(
             "รูปแบบการแสดงผลที่เหมาะสมกับอุปกรณ์ของคุณ:", 
             ["📅 ตารางปฏิทิน (สำหรับคอมพิวเตอร์/แท็บเล็ต)", "📱 รายการเคสประจำเดือน (แนะนำสำหรับ iPhone/มือถือ)"], 
@@ -250,13 +244,11 @@ elif menu == "📅 Calendar & Case Detail":
         if 'sel_day' not in st.session_state or st.session_state.sel_day > num_days:
             st.session_state.sel_day = 1
 
-        # แบ่งฝั่งการ์ด 65:35 (สลับเป็นบนล่างอัตโนมัติบนสมาร์ทโฟน)
         col_left, col_right = st.columns([1.6, 1])
 
         # ---- ฝั่งซ้าย: แหล่งจิ้มเลือกข้อมูล ----
         with col_left:
             if "📅 ตารางปฏิทิน" in view_mode:
-                # โหมดวาดตารางปฏิทินปกติ
                 cal = calendar.Calendar(firstweekday=6)
                 month_days = cal.monthdayscalendar(year, month)
                 
@@ -299,7 +291,6 @@ elif menu == "📅 Calendar & Case Detail":
                     st.session_state.selected_case_idx = None
 
             else:
-                # โหมดรายการแนวตั้ง หมดปัญหาหน้าจอ iPhone บีบตารางจิ๋ว
                 st.subheader(f"📋 รายการเคสประจำเดือน {calendar.month_name[month]}")
                 
                 if not monthly_data.empty:
@@ -346,18 +337,16 @@ elif menu == "📅 Calendar & Case Detail":
                 status_txt = str(selected_case[status_col]) if pd.notnull(selected_case[status_col]) else "-"
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
-                # 🎨 ตรวจสอบคำใน status_txt เพื่อกำหนดสีให้ตรงกับหน้า Dashboard
-                display_color = "#333333" # สีตั้งต้น
+                display_color = "#333333"
                 if "เรียบร้อย" in status_txt or "Complete" in status_txt:
-                    display_color = "#00CC96" # สีเขียว
+                    display_color = "#00CC96" 
                 elif "รอดำเนินการ" in status_txt or "Pending" in status_txt:
-                    display_color = "#EF553B" # สีแดง
+                    display_color = "#EF553B" 
                 elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt:
-                    display_color = "#FF8C00" # สีส้ม
+                    display_color = "#FF8C00" 
                 elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt:
-                    display_color = "#9E9E9E" # สีเทา
+                    display_color = "#9E9E9E" 
 
-                # ใช้คลาส CSS อัจฉริยะตัดคำอัตโนมัติป้องกันตัวหนังสือทะลุกรอบในจอโทรศัพท์
                 card_html = textwrap.dedent(f"""
                     <div class="responsive-card">
                         <div class="card-header-box">
@@ -377,33 +366,47 @@ elif menu == "📅 Calendar & Case Detail":
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # --- ส่วนแสดงผลรูปภาพ (ที่เพิ่มใหม่) ---
+                # --- ส่วนแสดงผลรูปภาพ (รองรับ Base64 & Direct URL) ---
                 st.markdown("<h4 style='color: #444; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
-                # เช็กตำแหน่งคอลัมน์รูปภาพ (สมมติว่าเป็นคอลัมน์ที่ 8 และ 9, ปรับแก้ได้ถ้าหัวตารางขยับ)
-                img_before_col = df.columns[8] if len(df.columns) > 8 else None 
-                img_after_col = df.columns[9] if len(df.columns) > 9 else None  
+                # 📌 ตรวจสอบลำดับคอลัมน์รูปภาพของคุณ (ตั้งต้นที่ 8 และ 9)
+                col_index_before = 8
+                col_index_after = 9
 
-                img_b_url = str(selected_case[img_before_col]) if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
-                img_a_url = str(selected_case[img_after_col]) if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
+                img_before_col = df.columns[col_index_before] if len(df.columns) > col_index_before else None 
+                img_after_col = df.columns[col_index_after] if len(df.columns) > col_index_after else None  
+
+                img_b_url = str(selected_case[img_before_col]).strip() if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
+                img_a_url = str(selected_case[img_after_col]).strip() if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
 
                 i_col1, i_col2 = st.columns(2)
                 
                 with i_col1:
-                    if img_b_url and img_b_url.startswith('http'):
+                    if img_b_url.startswith('http'):
                         st.image(img_b_url, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
+                    elif len(img_b_url) > 100: # ถ้าข้อมูลยาวๆ สันนิษฐานว่าเป็น Base64
+                        try:
+                            image_bytes = base64.b64decode(img_b_url)
+                            st.image(image_bytes, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
+                        except Exception as e:
+                            st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
                     else:
                         st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
 
                 with i_col2:
-                    if img_a_url and img_a_url.startswith('http'):
+                    if img_a_url.startswith('http'):
                         st.image(img_a_url, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
+                    elif len(img_a_url) > 100:
+                        try:
+                            image_bytes = base64.b64decode(img_a_url)
+                            st.image(image_bytes, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
+                        except Exception as e:
+                            st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
                     else:
                         st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
                 
                 st.markdown("---")
                 
-                # กล่องประวัติ Timeline
                 timeline_html = textwrap.dedent(f"""
                     <div class="timeline-container">
                         <div class="timeline-header">
@@ -442,7 +445,6 @@ elif menu == "📝 Report New Case":
         f_loc = st.text_input("สถานที่ (Location)")
         f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
         
-        # เพิ่มตัวเลือก "ไม่พบประเด็น" และ "ดำเนินการเรียบร้อย" ให้ตรงกับข้อมูล
         f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย", "ไม่พบประเด็น"])
         
         f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
@@ -453,6 +455,7 @@ elif menu == "📝 Report New Case":
         
         if st.form_submit_button("🚀 บันทึกข้อมูล"):
             try:
+                # 📌 ตรงนี้คือส่วนที่แปลงรูปเป็น Base64 แล้วส่งไปที่ Google Sheet ครับ
                 payload = {
                     "date": str(f_date), "topic": f_topic, "location": f_loc,
                     "responsible": f_resp, "status": f_status, "action": f_action, "risk": f_risk,
