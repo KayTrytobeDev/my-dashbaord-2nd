@@ -203,7 +203,7 @@ if menu == "📊 Dashboard":
             st.markdown("---")
             
             # --- 🔥 ส่วนที่เพิ่มใหม่: กราฟเจาะลึกความสัมพันธ์ Risk Level vs Status ---
-            st.subheader("📊 เจาะลึกความเสี่ยง: แต่ละ Risk Level มีสถานะใดบ้าง (แถว K & E)")
+            st.subheader("📊 เจาะลึกสถานะความเสี่ยง แต่ละระดับ ")
             
             # ยุบรวมและนับจำนวนเคสแยกตามคู่ Risk เละ Status
             df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
