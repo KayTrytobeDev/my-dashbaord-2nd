@@ -153,7 +153,7 @@ if menu == "📊 Dashboard":
     
     if not df.empty:
         try:
-            # ระบบดึงหัวตารางอัจฉริยะ 
+            # 📌 ระบบดึงหัวตารางอัจฉริยะ 
             date_col = df.columns[0]
             cols = df.columns.tolist()
             status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
@@ -223,15 +223,41 @@ if menu == "📊 Dashboard":
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-            # --- 🔥 เปลี่ยนกราฟกลุ่มเป็นระบบ "กล่องเจาะลึกข้อมูลตามความเสี่ยง" ---
+            # --- 🔥 กล่องสรุปรวม + เจาะลึกสถานะตามระดับความเสี่ยง ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะการทำงาน (แยกตามระดับความเสี่ยง)</div>', unsafe_allow_html=True)
             
+            # 1. กล่องสรุปจำนวนรวมของแต่ละระดับความเสี่ยง
+            total_high = len(df[df[risk_col].astype(str).str.strip().str.title() == 'High'])
+            total_medium = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Medium'])
+            total_low = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Low'])
+            
+            risk_summary_html = f"""
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    <div style="background-color: #111114; border: 1px solid #222227; border-top: 4px solid #ff453a; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <div style="font-size: 14px; color: #a1a1aa; font-weight: 600;">🚨 ความเสี่ยงสูง (High)</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #ffffff; margin-top: 5px;">{total_high} <span style="font-size:16px; color:#ff453a;">เคส</span></div>
+                    </div>
+                    <div style="background-color: #111114; border: 1px solid #222227; border-top: 4px solid #ffb703; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <div style="font-size: 14px; color: #a1a1aa; font-weight: 600;">⚠️ ความเสี่ยงปานกลาง (Medium)</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #ffffff; margin-top: 5px;">{total_medium} <span style="font-size:16px; color:#ffb703;">เคส</span></div>
+                    </div>
+                    <div style="background-color: #111114; border: 1px solid #222227; border-top: 4px solid #30d158; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        <div style="font-size: 14px; color: #a1a1aa; font-weight: 600;">✅ ความเสี่ยงต่ำ (Low)</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #ffffff; margin-top: 5px;">{total_low} <span style="font-size:16px; color:#30d158;">เคส</span></div>
+                    </div>
+                </div>
+            """
+            st.markdown(risk_summary_html, unsafe_allow_html=True)
+            st.markdown("<hr style='border: 1px solid #222227; margin: 20px 0;'>", unsafe_allow_html=True)
+            
+            # 2. ปุ่มกดเลือกความเสี่ยง เพื่อดูข้อมูลเจาะลึก
             selected_risk = st.radio(
-                "🎯 เลือกระดับความเสี่ยงเพื่อดูสถานะปัจจุบัน:",
+                "🎯 เลือกระดับความเสี่ยงเพื่อดูสถานะปัจจุบันแบบละเอียด:",
                 ["High", "Medium", "Low"],
                 horizontal=True
             )
             
+            # 3. กรองข้อมูลเฉพาะระดับความเสี่ยงที่เลือก
             df_filtered_risk = df[df[risk_col].astype(str).str.strip().str.title() == selected_risk.title()]
             
             r_pending = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('รอดำเนินการ|Pending', na=False, case=False)])
@@ -239,6 +265,7 @@ if menu == "📊 Dashboard":
             r_completed = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete', na=False, case=False)])
             r_no_issue = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('ไม่พบประเด็น|No Issue', na=False, case=False)])
             
+            # 4. สร้างกล่องย่อยแสดงสถานะ
             risk_box_html = f"""
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
                     <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -262,7 +289,7 @@ if menu == "📊 Dashboard":
             st.markdown(risk_box_html, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # --- ตารางข้อมูลดิบ ---
+            # --- ตารางข้อมูลดิบด้านล่าง ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📋 รายการบันทึกสถานการณ์ล่าสุด</div>', unsafe_allow_html=True)
             df_table = df.copy()
             df_table[date_col] = df_table[date_col].dt.strftime('%d/%m/%Y').fillna('ไม่ระบุ')
