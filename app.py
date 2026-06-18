@@ -8,14 +8,15 @@ import base64
 import textwrap
 
 # ==========================================
-# 1. SET PAGE CONFIG & THEME PRESET
+# 1. SET PAGE CONFIG & SYSTEM INITIALIZATION
 # ==========================================
-st.set_page_config(page_title="Risk Tracker System", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layout="wide")
 
+# ลิงก์ Web App ของ Google Apps Script
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 # ==========================================
-# 2. PREMIUM DARK MODE CSS (พื้นหลังดำสนิท)
+# 2. PREMIUM DARK MODE CSS
 # ==========================================
 st.markdown("""
     <style>
@@ -33,7 +34,7 @@ st.markdown("""
         border-right: 1px solid #1f1f23;
     }
 
-    /* ล็อกสีปุ่มในปฏิทินให้มองเห็นชัดเจนใน Dark Mode */
+    /* ล็อกสีปุ่มให้มองเห็นชัดเจนใน Dark Mode */
     div[data-testid="stButton"] > button {
         background-color: #18181b !important; 
         color: #ffffff !important; 
@@ -152,7 +153,7 @@ if menu == "📊 Dashboard":
     
     if not df.empty:
         try:
-            # 📌 ระบบดึงหัวตารางอัจฉริยะ 
+            # ระบบดึงหัวตารางอัจฉริยะ 
             date_col = df.columns[0]
             cols = df.columns.tolist()
             status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
@@ -205,7 +206,6 @@ if menu == "📊 Dashboard":
                 status_counts.columns = ['Status', 'Count']
                 
                 fig_pie = px.pie(status_counts, values='Count', names='Status', hole=0.55, color='Status', color_discrete_map=status_colors)
-                # 📌 บังคับกราฟใช้ Theme Dark
                 fig_pie.update_layout(template='plotly_dark', showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#111114', width=2)))
                 st.plotly_chart(fig_pie, use_container_width=True)
@@ -216,7 +216,6 @@ if menu == "📊 Dashboard":
                 risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
                 risk_counts.columns = ['Risk', 'Count']
                 
-                # 📌 บังคับฟอนต์กราฟและ Theme Dark
                 fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#ff453a', 'Medium': '#ffb703', 'Low': '#30d158'})
                 fig_bar.update_traces(textposition='outside', textfont=dict(color='#ffffff', size=14))
                 fig_bar.update_layout(template='plotly_dark', showlegend=False, xaxis_title="", yaxis_title="จำนวนเคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
@@ -224,26 +223,46 @@ if menu == "📊 Dashboard":
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
-            df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
+            # --- 🔥 เปลี่ยนกราฟกลุ่มเป็นระบบ "กล่องเจาะลึกข้อมูลตามความเสี่ยง" ---
+            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะการทำงาน (แยกตามระดับความเสี่ยง)</div>', unsafe_allow_html=True)
             
-            # 📌 บังคับฟอนต์กราฟกลุ่มและ Theme Dark
-            fig_cross = px.bar(
-                df_cross, x=risk_col, y='จำนวนเคส', color=status_col, barmode='group',
-                text='จำนวนเคส', color_discrete_map=status_colors,
-                category_orders={risk_col: ["Low", "Medium", "High"]}
+            selected_risk = st.radio(
+                "🎯 เลือกระดับความเสี่ยงเพื่อดูสถานะปัจจุบัน:",
+                ["High", "Medium", "Low"],
+                horizontal=True
             )
-            fig_cross.update_traces(textposition='outside', textfont=dict(color='#ffffff', size=13), marker=dict(line=dict(width=0)))
-            fig_cross.update_layout(
-                template='plotly_dark',
-                xaxis_title="ระดับความเสี่ยง (Risk Level)", yaxis_title="จำนวนบันทึก (เคส)",
-                legend_title="สถานะปัจจุบัน", margin=dict(t=30, b=10, l=10, r=10), height=340,
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
-            )
-            fig_cross.update_yaxes(gridcolor='#222227')
-            st.plotly_chart(fig_cross, use_container_width=True)
+            
+            df_filtered_risk = df[df[risk_col].astype(str).str.strip().str.title() == selected_risk.title()]
+            
+            r_pending = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('รอดำเนินการ|Pending', na=False, case=False)])
+            r_progress = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('กำลังดำเนินการ|In Progress', na=False, case=False)])
+            r_completed = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete', na=False, case=False)])
+            r_no_issue = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('ไม่พบประเด็น|No Issue', na=False, case=False)])
+            
+            risk_box_html = f"""
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <div style="font-size: 13px; color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">📥 รอดำเนินการ</div>
+                        <div style="font-size: 32px; font-weight: 700; color: #ff453a;">{r_pending}</div>
+                    </div>
+                    <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <div style="font-size: 13px; color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">🛠️ กำลังดำเนินการ</div>
+                        <div style="font-size: 32px; font-weight: 700; color: #ff9f0a;">{r_progress}</div>
+                    </div>
+                    <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <div style="font-size: 13px; color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">🟢 ดำเนินการเรียบร้อย</div>
+                        <div style="font-size: 32px; font-weight: 700; color: #30d158;">{r_completed}</div>
+                    </div>
+                    <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <div style="font-size: 13px; color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">⚪ ไม่พบประเด็น</div>
+                        <div style="font-size: 32px; font-weight: 700; color: #8e8e93;">{r_no_issue}</div>
+                    </div>
+                </div>
+            """
+            st.markdown(risk_box_html, unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
+            # --- ตารางข้อมูลดิบ ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📋 รายการบันทึกสถานการณ์ล่าสุด</div>', unsafe_allow_html=True)
             df_table = df.copy()
             df_table[date_col] = df_table[date_col].dt.strftime('%d/%m/%Y').fillna('ไม่ระบุ')
@@ -277,7 +296,7 @@ elif menu == "📅 Calendar & Case Detail":
         sheet_year = year + 543 
 
         view_mode = st.radio(
-            "รูปแบบการแสดงผลที่เหมาะสมกับอุปกรณ์ของคุณ:", 
+            "รูปแบบการแสดงผล:", 
             ["📅 ตารางปฏิทิน (สำหรับคอมพิวเตอร์/แท็บเล็ต)", "📱 รายการเคสประจำเดือน (แนะนำสำหรับ iPhone/มือถือ)"], 
             horizontal=True
         )
@@ -341,7 +360,7 @@ elif menu == "📅 Calendar & Case Detail":
                     options_dict = {f"📅 วันที่ {row[date_col].day} | {row[topic_col][:25]}...": idx for idx, row in monthly_data.iterrows()}
                     
                     selected_mobile_case = st.radio(
-                        "📱 แตะเลือกเคสเพื่ออัปเดตรายละเอียดฝั่งขวา (หรือด้านล่าง):", 
+                        "📱 แตะเลือกเคสเพื่ออัปเดตรายละเอียดฝั่งขวา:", 
                         list(options_dict.keys()), key="mobile_case_radio"
                     )
                     st.session_state.selected_case_idx = options_dict[selected_mobile_case]
@@ -445,11 +464,11 @@ elif menu == "📅 Calendar & Case Detail":
                         </div>
                         <div class="timeline-row">
                             <span class="timeline-dot">●</span>
-                            <strong>{short_date}, 09:00</strong> - บันทึกข้อมูลความเสี่ยงเข้าระบบเสร็จสิ้น
+                            <strong>{short_date}, 09:00</strong> - บันทึกข้อมูลเข้าระบบ
                         </div>
                         <div class="timeline-row">
                             <span class="timeline-dot">●</span>
-                            <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายให้ทีม {resp_txt}
+                            <strong>สถานะปัจจุบัน</strong> - [{status_txt}] มอบหมายทีม {resp_txt}
                         </div>
                     </div>
                 """)
