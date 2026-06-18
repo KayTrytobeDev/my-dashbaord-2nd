@@ -142,8 +142,9 @@ if menu == "📊 Dashboard":
     if not df.empty:
         try:
             date_col = df.columns[0]
-            status_col = 'Status' if 'Status' in df.columns else df.columns[4]
-            risk_col = 'Risk Level' if 'Risk Level' in df.columns else df.columns[-1]
+            # 📌 ชี้เป้าไปที่คอลัมน์ E (ดัชนีที่ 4) และคอลัมน์ K (ดัชนีที่ 10) ตรงๆ ตามที่พี่แจ้งเลยครับ
+            status_col = df.columns[4] if len(df.columns) > 4 else 'Status'
+            risk_col = df.columns[10] if len(df.columns) > 10 else df.columns[-1]
             
             # --- KPI Cards ---
             total_cases = len(df)
@@ -159,24 +160,25 @@ if menu == "📊 Dashboard":
             
             st.markdown("---")
             
-            # --- กราฟวิเคราะห์ ---
+            # 🎨 กำหนดแผนที่สีล็อกสถานะ (แชร์ใช้ร่วมกันทุกกราฟ)
+            status_colors = {
+                'ดำเนินการเรียบร้อย': '#00CC96',
+                'เรียบร้อย': '#00CC96',
+                'Complete': '#00CC96',
+                'กำลังดำเนินการ': '#FF8C00',
+                'In Progress': '#FF8C00',
+                'รอดำเนินการ': '#EF553B',
+                'Pending': '#EF553B',
+                'ไม่พบประเด็น': '#9E9E9E',
+                'No Issue': '#9E9E9E'
+            }
+
+            # --- กราฟวิเคราะห์หลัก ---
             g_col1, g_col2 = st.columns(2)
             with g_col1:
                 st.subheader("💡 สัดส่วนสถานะการดำเนินงาน")
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
-                
-                status_colors = {
-                    'ดำเนินการเรียบร้อย': '#00CC96',
-                    'เรียบร้อย': '#00CC96',
-                    'Complete': '#00CC96',
-                    'กำลังดำเนินการ': '#FF8C00',
-                    'In Progress': '#FF8C00',
-                    'รอดำเนินการ': '#EF553B',
-                    'Pending': '#EF553B',
-                    'ไม่พบประเด็น': '#9E9E9E',
-                    'No Issue': '#9E9E9E'
-                }
                 
                 fig_pie = px.pie(
                     status_counts, 
@@ -200,6 +202,33 @@ if menu == "📊 Dashboard":
                 
             st.markdown("---")
             
+            # --- 🔥 ส่วนที่เพิ่มใหม่: กราฟเจาะลึกความสัมพันธ์ Risk Level vs Status ---
+            st.subheader("📊 เจาะลึกความเสี่ยง: แต่ละ Risk Level มีสถานะใดบ้าง (แถว K & E)")
+            
+            # ยุบรวมและนับจำนวนเคสแยกตามคู่ Risk เละ Status
+            df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
+            
+            fig_cross = px.bar(
+                df_cross,
+                x=risk_col,
+                y='จำนวนเคส',
+                color=status_col,
+                barmode='group', # แยกแท่งเป็นกลุ่มเพื่อให้ iPhone หรือ Desktop อ่านง่าย ไม่ซ้อนกัน
+                text='จำนวนเคส', # โชว์ตัวเลขสรุปบนแท่งกราฟ
+                color_discrete_map=status_colors,
+                category_orders={risk_col: ["Low", "Medium", "High"]} # เรียงจากน้อยไปมากให้สวยงาม
+            )
+            fig_cross.update_traces(textposition='outside')
+            fig_cross.update_layout(
+                xaxis_title="ระดับความเสี่ยง (Risk Level)",
+                yaxis_title="จำนวนบันทึก (เคส)",
+                legend_title="สถานะปัจจุบัน",
+                margin=dict(t=20, b=20, l=10, r=10)
+            )
+            st.plotly_chart(fig_cross, use_container_width=True)
+            
+            st.markdown("---")
+            
             # --- ตารางข้อมูลดิบ ---
             st.subheader("📋 รายการบันทึกความเสี่ยงล่าสุด")
             df_table = df.copy()
@@ -220,9 +249,9 @@ elif menu == "📅 Calendar & Case Detail":
         topic_col = 'Topic/risk finding' if 'Topic/risk finding' in df.columns else df.columns[1]
         loc_col = 'Location' if 'Location' in df.columns else df.columns[2]
         resp_col = 'Responsible Person' if 'Responsible Person' in df.columns else df.columns[3]
-        status_col = 'Status' if 'Status' in df.columns else df.columns[4]
+        status_col = df.columns[4] if len(df.columns) > 4 else 'Status'
         action_col = 'Corrective Action' if 'Corrective Action' in df.columns else df.columns[5]
-        risk_col = 'Risk Level' if 'Risk Level' in df.columns else df.columns[-1]
+        risk_col = df.columns[10] if len(df.columns) > 10 else df.columns[-1]
 
         t1, t2, t3 = st.columns([2, 1, 1])
         with t1: st.title("📅 Calendar & Case")
@@ -246,7 +275,6 @@ elif menu == "📅 Calendar & Case Detail":
 
         col_left, col_right = st.columns([1.6, 1])
 
-        # ---- ฝั่งซ้าย: แหล่งจิ้มเลือกข้อมูล ----
         with col_left:
             if "📅 ตารางปฏิทิน" in view_mode:
                 cal = calendar.Calendar(firstweekday=6)
@@ -308,7 +336,6 @@ elif menu == "📅 Calendar & Case Detail":
                     st.success(f"🎉 เดือนนี้ปลอดภัยดี ไม่มีบันทึกเคสความเสี่ยงใดๆ")
                     st.session_state.selected_case_idx = None
 
-        # ---- ฝั่งขวา: การ์ดแสดงข้อมูลเจาะลึก (Responsive Card) ----
         with col_right:
             st.subheader("🔍 Detailed Case View")
             chosen_idx = st.session_state.get('selected_case_idx')
@@ -369,7 +396,6 @@ elif menu == "📅 Calendar & Case Detail":
                 # --- ส่วนแสดงผลรูปภาพ (รองรับ Base64 & Direct URL) ---
                 st.markdown("<h4 style='color: #444; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
-                # 📌 ตรวจสอบลำดับคอลัมน์รูปภาพของคุณ (ตั้งต้นที่ 8 และ 9)
                 col_index_before = 8
                 col_index_after = 9
 
@@ -384,7 +410,7 @@ elif menu == "📅 Calendar & Case Detail":
                 with i_col1:
                     if img_b_url.startswith('http'):
                         st.image(img_b_url, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
-                    elif len(img_b_url) > 100: # ถ้าข้อมูลยาวๆ สันนิษฐานว่าเป็น Base64
+                    elif len(img_b_url) > 100:
                         try:
                             image_bytes = base64.b64decode(img_b_url)
                             st.image(image_bytes, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
@@ -455,7 +481,6 @@ elif menu == "📝 Report New Case":
         
         if st.form_submit_button("🚀 บันทึกข้อมูล"):
             try:
-                # 📌 ตรงนี้คือส่วนที่แปลงรูปเป็น Base64 แล้วส่งไปที่ Google Sheet ครับ
                 payload = {
                     "date": str(f_date), "topic": f_topic, "location": f_loc,
                     "responsible": f_resp, "status": f_status, "action": f_action, "risk": f_risk,
