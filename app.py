@@ -12,15 +12,13 @@ import textwrap
 # ==========================================
 st.set_page_config(page_title="Risk Tracker System", page_icon="🛡️", layout="wide")
 
-# ลิงก์ Web App ของ Google Apps Script
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 # ==========================================
-# 2. PREMIUM MODERN DASHBOARD CSS (ดีไซน์ใหม่ทั้งหมด)
+# 2. PREMIUM MODERN DASHBOARD CSS
 # ==========================================
 st.markdown("""
     <style>
-    /* ตั้งค่าฟอนต์และพื้นหลังระบบภาพรวม */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     html, body, [data-testid="stAppViewContainer"] {
@@ -28,41 +26,37 @@ st.markdown("""
         background-color: #f4f6f9;
     }
     
-    /* --- กล่องครอบชาร์ตและการ์ดเนื้อหา (Dashboard Widget Card) --- */
+    /* ล็อกสีปุ่มในปฏิทินให้มองเห็นชัดเจนใน Light Mode */
+    div[data-testid="stButton"] > button {
+        border: 1px solid #e2e8f0 !important;
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    div[data-testid="stButton"] > button:hover {
+        border-color: #4361ee !important;
+        color: #4361ee !important;
+    }
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background-color: #2ec4b6 !important;
+        border-color: #2ec4b6 !important;
+        color: #ffffff !important;
+    }
+    
+    /* --- Dashboard Widget Card --- */
     .dashboard-card {
-        background: #ffffff;
-        padding: 24px;
-        border-radius: 12px;
-        border: 1px solid #eef2f5;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        margin-bottom: 24px;
+        background: #ffffff; padding: 24px; border-radius: 12px;
+        border: 1px solid #eef2f5; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 24px;
     }
     .dashboard-card-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        font-size: 16px; font-weight: 600; color: #2c3e50;
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
 
-    /* --- กล่อง KPI เมทริกซ์สไตล์พรีเมียม (Custom KPI Cards) --- */
-    .kpi-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 20px;
-        margin-bottom: 25px;
-    }
+    /* --- Custom KPI Cards --- */
+    .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
     .kpi-card {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 20px;
-        border-left: 5px solid #333;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-        border-top: 1px solid #f1f3f5;
-        border-right: 1px solid #f1f3f5;
-        border-bottom: 1px solid #f1f3f5;
+        background: #ffffff; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-top: 1px solid #f1f3f5; border-right: 1px solid #f1f3f5; border-bottom: 1px solid #f1f3f5;
         transition: transform 0.2s;
     }
     .kpi-card:hover { transform: translateY(-3px); }
@@ -70,67 +64,29 @@ st.markdown("""
     .kpi-value { font-size: 28px; font-weight: 700; color: #1e293b; margin: 8px 0 4px 0; }
     .kpi-subtext { font-size: 12px; color: #64748b; }
     
-    /* สีคัลเลอร์โค้ดของแต่ละ KPI */
     .kpi-total { border-left-color: #4361ee; }
     .kpi-success { border-left-color: #2ec4b6; }
     .kpi-pending { border-left-color: #ff9f1c; }
     .kpi-rate { border-left-color: #7209b7; }
 
-    /* --- เคสดีเทลการ์ด (ฝั่งปฏิทิน) --- */
+    /* --- Case Detail Card --- */
     .responsive-card {
-        background-color: #ffffff; 
-        padding: 24px; 
-        border-radius: 12px; 
-        border: 1px solid #eef2f5; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        word-wrap: break-word;
+        background-color: #ffffff; padding: 24px; border-radius: 12px; 
+        border: 1px solid #eef2f5; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 20px; word-wrap: break-word;
     }
-    .card-header-box {
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        border-bottom: 1px solid #f1f5f9; 
-        padding-bottom: 14px; 
-        margin-bottom: 18px;
-    }
+    .card-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 18px; }
     .card-title-text { font-size: 16px; font-weight: 700; color: #1e293b; }
     .card-date-text { color: #94a3b8; font-size: 13px; font-weight: 500; }
     .case-p { margin: 10px 0; font-size: 14px; color: #334155; line-height: 1.6; }
     .case-p-highlight { color: #4361ee; font-weight: 600; }
     
-    /* --- ตารางปฏิทินและไทม์ไลน์ --- */
-    .timeline-container {
-        background-color: #f8fafc; 
-        border-radius: 12px; 
-        padding: 18px; 
-        border: 1px solid #e2e8f0;
-        margin-top: 20px;
-    }
-    .timeline-header {
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        margin-bottom: 14px;
-    }
-    .timeline-row {
-        border-left: 2px solid #cbd5e1; 
-        padding-left: 18px; 
-        position: relative; 
-        margin-bottom: 12px; 
-        font-size: 13px; 
-        color: #475569;
-    }
+    /* --- Timeline --- */
+    .timeline-container { background-color: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e2e8f0; margin-top: 20px; }
+    .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .timeline-row { border-left: 2px solid #cbd5e1; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #475569; }
     .timeline-dot { position: absolute; left: -6px; top: 2px; color: #94a3b8; font-size: 11px; }
-    .empty-state-box {
-        background-color: #ffffff; 
-        padding: 50px 20px; 
-        border-radius: 12px; 
-        text-align: center; 
-        border: 1px dashed #cbd5e1;
-    }
+    .empty-state-box { background-color: #ffffff; padding: 50px 20px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1; }
 
-    /* Responsive Mobile Screen */
     @media (max-width: 768px) {
         .dashboard-card { padding: 16px; }
         .kpi-container { grid-template-columns: 1fr; gap: 12px; }
@@ -142,7 +98,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. DATA CORE (ระบบดึงข้อมูลหลังบ้าน)
+# 3. DATA CORE
 # ==========================================
 @st.cache_data(ttl=5)
 def load_data():
@@ -168,30 +124,31 @@ def load_data():
 df = load_data()
 
 # ==========================================
-# 4. SIDEBAR NAVIGATION (เมนูหลัก)
+# 4. SIDEBAR NAVIGATION
 # ==========================================
 st.sidebar.title("🛡️ Risk Tracker")
 menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
 
 # ==========================================
-# MODULE 1: DASHBOARD (หน้าสรุปภาพรวมดีไซน์โมเดิร์น)
+# MODULE 1: DASHBOARD
 # ==========================================
 if menu == "📊 Dashboard":
     st.markdown("<h2 style='color: #1e293b; font-weight: 700; margin-bottom: 20px;'>📊 Overview & Risk Analytics</h2>", unsafe_allow_html=True)
     
     if not df.empty:
         try:
+            # 📌 ระบบดึงหัวตารางอัจฉริยะ (อิงจากชื่อ Column ใน Google Sheets จริงๆ)
             date_col = df.columns[0]
-            status_col = df.columns[4] if len(df.columns) > 4 else 'Status'
-            risk_col = df.columns[10] if len(df.columns) > 10 else df.columns[-1]
+            cols = df.columns.tolist()
+            status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
+            risk_col = 'Risk Level' if 'Risk Level' in cols else (cols[10] if len(cols) > 10 else cols[-1])
             
-            # ---คำนวณตัวเลขสำหรับ Premium KPI Cards ---
+            # --- KPI Cards ---
             total_cases = len(df)
             completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
             pending_cases = len(df[df[status_col].astype(str).str.contains('รอดำเนินการ|กำลังดำเนินการ|Pending|In Progress', na=False, case=False)])
             success_rate = (completed_cases / total_cases * 100) if total_cases > 0 else 0
             
-            # Render Premium KPI Cards แบบ HTML Grid
             kpi_html = textwrap.dedent(f"""
                 <div class="kpi-container">
                     <div class="kpi-card kpi-total">
@@ -200,22 +157,24 @@ if menu == "📊 Dashboard":
                         <div class="kpi-subtext">🔄 บันทึกสะสมในระบบ</div>
                     </div>
                     <div class="kpi-card kpi-success">
+                        <div class="kpi-label">ปิดงานเรียบร้อยแล้ว</div>
                         <div class="kpi-value">{completed_cases}</div>
-                        <div class="kpi-subtext">🟢 ปิดงานเรียบร้อยแล้ว</div>
+                        <div class="kpi-subtext">🟢 ปิดงานสำเร็จ</div>
                     </div>
                     <div class="kpi-card kpi-pending">
+                        <div class="kpi-label">รอดำเนินการ / กำลังทำ</div>
                         <div class="kpi-value">{pending_cases}</div>
                         <div class="kpi-subtext">⏳ อยู่ระหว่างกระบวนการ</div>
                     </div>
                     <div class="kpi-card kpi-rate">
+                        <div class="kpi-label">อัตราความสำเร็จภาพรวม</div>
                         <div class="kpi-value">{success_rate:.1f}%</div>
-                        <div class="kpi-subtext">📈 อัตราความสำเร็จภาพรวม</div>
+                        <div class="kpi-subtext">📈 ดัชนีประสิทธิภาพ</div>
                     </div>
                 </div>
             """)
             st.markdown(kpi_html, unsafe_allow_html=True)
             
-            # แผนที่สีมาตรฐานสากลแมตช์ตามแบรนด์เนมแดชบอร์ด
             status_colors = {
                 'ดำเนินการเรียบร้อย': '#2ec4b6', 'เรียบร้อย': '#2ec4b6', 'Complete': '#2ec4b6',
                 'กำลังดำเนินการ': '#ff9f1c', 'In Progress': '#ff9f1c',
@@ -223,7 +182,6 @@ if menu == "📊 Dashboard":
                 'ไม่พบประเด็น': '#94a3b8', 'No Issue': '#94a3b8'
             }
 
-            # --- แถวกราฟหลักครึ่งบน ---
             g_col1, g_col2 = st.columns(2)
             with g_col1:
                 st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">💡 สัดส่วนสถานะการดำเนินงานภาพรวม</div>', unsafe_allow_html=True)
@@ -241,22 +199,24 @@ if menu == "📊 Dashboard":
                 risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
                 risk_counts.columns = ['Risk', 'Count']
                 
-                fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', color_discrete_map={'High': '#e63946', 'Medium': '#ffb703', 'Low': '#2ec4b6'})
+                # 📌 Fix: เพิ่มตัวเลขบนกราฟ และบังคับสีฟอนต์เป็นสีเข้ม
+                fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#e63946', 'Medium': '#ffb703', 'Low': '#2ec4b6'})
+                fig_bar.update_traces(textposition='outside', textfont=dict(color='#1e293b', size=14))
                 fig_bar.update_layout(showlegend=False, xaxis_title="", yaxis_title="จำนวนเคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 fig_bar.update_yaxes(gridcolor='#f1f5f9')
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-            # --- 🔥 ส่วนที่ปรับแต่งแบบครอสแท็บแยกกลุ่ม (Risk Level vs Status) ---
-            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง </div>', unsafe_allow_html=True)
+            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
             df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
             
+            # 📌 Fix: บังคับฟอนต์กราฟกลุ่ม
             fig_cross = px.bar(
                 df_cross, x=risk_col, y='จำนวนเคส', color=status_col, barmode='group',
                 text='จำนวนเคส', color_discrete_map=status_colors,
                 category_orders={risk_col: ["Low", "Medium", "High"]}
             )
-            fig_cross.update_traces(textposition='outside', marker=dict(line=dict(width=0)))
+            fig_cross.update_traces(textposition='outside', textfont=dict(color='#1e293b', size=13), marker=dict(line=dict(width=0)))
             fig_cross.update_layout(
                 xaxis_title="ระดับความเสี่ยง (Risk Level)", yaxis_title="จำนวนบันทึก (เคส)",
                 legend_title="สถานะปัจจุบัน", margin=dict(t=30, b=10, l=10, r=10), height=340,
@@ -266,7 +226,6 @@ if menu == "📊 Dashboard":
             st.plotly_chart(fig_cross, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # --- ตารางข้อมูลดิบด้านล่าง ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📋 รายการบันทึกสถานการณ์ล่าสุด</div>', unsafe_allow_html=True)
             df_table = df.copy()
             df_table[date_col] = df_table[date_col].dt.strftime('%d/%m/%Y').fillna('ไม่ระบุ')
@@ -283,13 +242,15 @@ if menu == "📊 Dashboard":
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     if not df.empty:
-        date_col = df.columns[0]
-        topic_col = 'Topic/risk finding' if 'Topic/risk finding' in df.columns else df.columns[1]
-        loc_col = 'Location' if 'Location' in df.columns else df.columns[2]
-        resp_col = 'Responsible Person' if 'Responsible Person' in df.columns else df.columns[3]
-        status_col = df.columns[4] if len(df.columns) > 4 else 'Status'
-        action_col = 'Corrective Action' if 'Corrective Action' in df.columns else df.columns[5]
-        risk_col = df.columns[10] if len(df.columns) > 10 else df.columns[-1]
+        # 📌 ระบบดึงคอลัมน์อัจฉริยะ สำหรับหน้าปฏิทิน
+        cols = df.columns.tolist()
+        date_col = cols[0]
+        topic_col = 'Topic/risk finding' if 'Topic/risk finding' in cols else cols[1]
+        loc_col = 'Location' if 'Location' in cols else cols[2]
+        resp_col = 'Responsible Person' if 'Responsible Person' in cols else cols[3]
+        status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
+        action_col = 'Corrective Action' if 'Corrective Action' in cols else cols[5]
+        risk_col = 'Risk Level' if 'Risk Level' in cols else (cols[10] if len(cols) > 10 else cols[-1])
 
         t1, t2, t3 = st.columns([2, 1, 1])
         with t1: st.title("📅 Calendar & Case")
@@ -306,7 +267,6 @@ elif menu == "📅 Calendar & Case Detail":
         st.markdown("---")
 
         monthly_data = df[(df[date_col].dt.month == month) & ((df[date_col].dt.year == year) | (df[date_col].dt.year == sheet_year))]
-
         _, num_days = calendar.monthrange(year, month)
         if 'sel_day' not in st.session_state or st.session_state.sel_day > num_days:
             st.session_state.sel_day = 1
@@ -323,7 +283,7 @@ elif menu == "📅 Calendar & Case Detail":
                     header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#64748b; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
                 
                 for week in month_days:
-                    cols = st.columns(7)
+                    cols_grid = st.columns(7)
                     for i, day in enumerate(week):
                         if day != 0:
                             is_match = (df[date_col].dt.day == day) & (df[date_col].dt.month == month) & ((df[date_col].dt.year == year) | (df[date_col].dt.year == sheet_year))
@@ -333,15 +293,15 @@ elif menu == "📅 Calendar & Case Detail":
                             is_selected = (day == st.session_state.sel_day)
                             btn_type = "primary" if is_selected else "secondary"
                             
-                            if cols[i].button(f"{day}", key=f"d_{day}", type=btn_type, use_container_width=True):
+                            if cols_grid[i].button(f"{day}", key=f"d_{day}", type=btn_type, use_container_width=True):
                                 st.session_state.sel_day = day
                                 st.session_state.pop('selected_case_idx', None) 
                                 st.rerun()
                             
                             if has_case and not is_selected:
-                                cols[i].markdown("<p style='text-align:center; margin-top:-22px; margin-bottom:0px; color:#2ec4b6; font-size:18px;'>•</p>", unsafe_allow_html=True)
+                                cols_grid[i].markdown("<p style='text-align:center; margin-top:-22px; margin-bottom:0px; color:#2ec4b6; font-size:18px;'>•</p>", unsafe_allow_html=True)
                         else:
-                            cols[i].write("")
+                            cols_grid[i].write("")
 
                 st.markdown("---")
                 st.subheader(f"Selected Date Summary: {calendar.month_name[month]} {st.session_state.sel_day}, {year}")
@@ -402,14 +362,10 @@ elif menu == "📅 Calendar & Case Detail":
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
                 display_color = "#334155"
-                if "เรียบร้อย" in status_txt or "Complete" in status_txt:
-                    display_color = "#2ec4b6" 
-                elif "รอดำเนินการ" in status_txt or "Pending" in status_txt:
-                    display_color = "#e63946" 
-                elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt:
-                    display_color = "#ff9f1c" 
-                elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt:
-                    display_color = "#94a3b8" 
+                if "เรียบร้อย" in status_txt or "Complete" in status_txt: display_color = "#2ec4b6" 
+                elif "รอดำเนินการ" in status_txt or "Pending" in status_txt: display_color = "#e63946" 
+                elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt: display_color = "#ff9f1c" 
+                elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt: display_color = "#94a3b8" 
 
                 card_html = textwrap.dedent(f"""
                     <div class="responsive-card">
@@ -430,12 +386,10 @@ elif menu == "📅 Calendar & Case Detail":
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # --- ส่วนแสดงผลรูปภาพ (รองรับ Base64 & Direct URL) ---
                 st.markdown("<h4 style='color: #475569; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
                 col_index_before = 8
                 col_index_after = 9
-
                 img_before_col = df.columns[col_index_before] if len(df.columns) > col_index_before else None 
                 img_after_col = df.columns[col_index_after] if len(df.columns) > col_index_after else None  
 
@@ -451,10 +405,8 @@ elif menu == "📅 Calendar & Case Detail":
                         try:
                             image_bytes = base64.b64decode(img_b_url)
                             st.image(image_bytes, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
-                        except Exception as e:
-                            st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
-                    else:
-                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
+                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
+                    else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
 
                 with i_col2:
                     if img_a_url.startswith('http'):
@@ -463,10 +415,8 @@ elif menu == "📅 Calendar & Case Detail":
                         try:
                             image_bytes = base64.b64decode(img_a_url)
                             st.image(image_bytes, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
-                        except Exception as e:
-                            st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
-                    else:
-                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
+                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
+                    else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
                 
                 st.markdown("---")
                 
@@ -498,7 +448,7 @@ elif menu == "📅 Calendar & Case Detail":
         st.warning("⚠️ ไม่มีข้อมูลเพื่อแสดงผลบนปฏิทิน")
 
 # ==========================================
-# MODULE 3: REPORT NEW CASE (หน้าฟอร์มรายงาน)
+# MODULE 3: REPORT NEW CASE
 # ==========================================
 elif menu == "📝 Report New Case":
     st.title("📝 รายงานเคสความเสี่ยงใหม่")
@@ -509,7 +459,6 @@ elif menu == "📝 Report New Case":
         f_resp = st.text_input("ผู้รับผิดชอบ (Responsible Person)")
         
         f_status = st.selectbox("สถานะ (Status)", ["รอดำเนินการ", "กำลังดำเนินการ", "ดำเนินการเรียบร้อย", "ไม่พบประเด็น"])
-        
         f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
         
@@ -530,7 +479,6 @@ elif menu == "📝 Report New Case":
                 if res.status_code == 200: 
                     st.success("🎉 บันทึกข้อมูลสำเร็จ! อัปเดตในระบบเรียบร้อย")
                     st.cache_data.clear() 
-                else:
-                    st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
+                else: st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
             except Exception as e:
                 st.error(f"❌ เกิดข้อผิดพลาดขณะส่งข้อมูล: {e}")
