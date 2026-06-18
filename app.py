@@ -8,13 +8,14 @@ import base64
 import textwrap
 import io
 from PIL import Image
+import re  # <--- เพิ่มตัวจัดการข้อความ (สำคัญสำหรับดึงลิงก์จากสูตร IMAGE)
 
 # ==========================================
 # 1. SET PAGE CONFIG & SYSTEM INITIALIZATION
 # ==========================================
 st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layout="wide")
 
-# 📌 นำลิงก์ Web App ตัวใหม่ที่เพิ่ง Deploy มาวางตรงนี้ครับ
+# 📌 เปลี่ยนลิงก์ด้านล่างนี้ให้เป็นลิงก์ Web App (Deploy ล่าสุด) ของพี่ครับ
 API_URL = "https://script.google.com/macros/s/AKfycbz_wuFoFx8ZOwvcQDkQGCP0gDhNv3N092dD4y4vtO2a6rO593q9p_GpRAsmo8Mh9DQ/exec"
 
 # ==========================================
@@ -35,7 +36,6 @@ st.markdown("""
         border-right: 1px solid #1f1f23;
     }
 
-    /* ล็อกสีปุ่มให้สว่างชัดเจน */
     div[data-testid="stButton"] > button {
         background-color: #18181b !important; 
         color: #ffffff !important; 
@@ -51,7 +51,6 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* ฟอร์ม Input สีเข้ม ตัวหนังสือขาว */
     div[data-baseweb="select"] > div, input, textarea {
         background-color: #18181b !important;
         color: #ffffff !important;
@@ -59,7 +58,6 @@ st.markdown("""
     }
     label, div[data-testid="stWidgetLabel"] p { color: #e5e5ea !important; }
     
-    /* --- Dashboard Card --- */
     .dashboard-card {
         background: #111114; padding: 24px; border-radius: 12px;
         border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 24px;
@@ -69,7 +67,6 @@ st.markdown("""
         margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
 
-    /* --- KPI Cards --- */
     .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
     .kpi-card {
         background: #111114; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
@@ -86,7 +83,6 @@ st.markdown("""
     .kpi-pending { border-left-color: #ff9f0a; }
     .kpi-rate { border-left-color: #bf5af2; }
 
-    /* --- Case Detail Card --- */
     .responsive-card {
         background-color: #111114; padding: 24px; border-radius: 12px; 
         border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 20px; color: #ffffff; word-wrap: break-word;
@@ -97,7 +93,6 @@ st.markdown("""
     .case-p { margin: 10px 0; font-size: 14px; color: #e5e5ea; line-height: 1.6; }
     .case-p-highlight { color: #0a84ff; font-weight: 600; }
     
-    /* --- Timeline --- */
     .timeline-container { background-color: #16161a; border-radius: 12px; padding: 18px; border: 1px solid #222227; margin-top: 20px; }
     .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .timeline-row { border-left: 2px solid #3a3a3c; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #d1d1d6; }
@@ -112,10 +107,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. HELPER FUNCTIONS (ระบบบีบอัดและถอดรหัสรูปภาพ)
+# 3. HELPER FUNCTIONS (ระบบจัดการรูปภาพ)
 # ==========================================
 def compress_image_to_b64(uploaded_file):
-    """บีบอัดภาพก่อนส่ง เพื่อป้องกันโค้ดยาวเกิน 50k ใน Sheets"""
+    """บีบอัดภาพก่อนส่ง เพื่อให้ข้อความสั้นลงไม่เกินลิมิต Sheets"""
     if uploaded_file is None:
         return ""
     try:
@@ -123,20 +118,43 @@ def compress_image_to_b64(uploaded_file):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # ย่อขนาดและบีบอัดคุณภาพ
-        img.thumbnail((500, 500), Image.Resampling.LANCZOS)
+        img.thumbnail((300, 300), Image.Resampling.LANCZOS)
         buffered = io.BytesIO()
-        img.save(buffered, format="JPEG", quality=40) 
+        img.save(buffered, format="JPEG", quality=20) 
         return base64.b64encode(buffered.getvalue()).decode()
-    except Exception as e:
+    except Exception:
         return ""
 
 def decode_base64_img(b64_str):
-    """ซ่อมแซม Padding ของ Base64 และถอดรหัส"""
-    if "," in b64_str: 
-        b64_str = b64_str.split(",")[1]
-    b64_str += "=" * ((4 - len(b64_str) % 4) % 4) 
-    return base64.b64decode(b64_str)
+    """ถอดรหัส Base64 เป็นรูปภาพ"""
+    try:
+        if "," in b64_str: 
+            b64_str = b64_str.split(",")[1]
+        b64_str += "=" * ((4 - len(b64_str) % 4) % 4) 
+        return base64.b64decode(b64_str)
+    except Exception:
+        return None
+
+def extract_and_convert_url(raw_text):
+    """ดึง URL ออกจากสูตร =IMAGE() และแปลงลิงก์ Google Drive เป็น Direct Link"""
+    if not raw_text or str(raw_text).lower() in ["nan", "-", "none"]:
+        return ""
+    
+    url = str(raw_text).strip()
+    
+    # ดึงเฉพาะ URL ออกมาจากสูตร =IMAGE("...")
+    match_img = re.search(r'IMAGE\("([^"]+)"\)', url, re.IGNORECASE)
+    if match_img:
+        url = match_img.group(1)
+        
+    # แปลงลิงก์ Google Drive ให้เป็นลิงก์ตรงสำหรับโชว์รูป
+    if "drive.google.com/file/d/" in url:
+        match_id = re.search(r'file/d/([a-zA-Z0-9_-]+)', url)
+        if match_id:
+            file_id = match_id.group(1)
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+            
+    return url
 
 # ==========================================
 # 4. DATA CORE
@@ -144,7 +162,7 @@ def decode_base64_img(b64_str):
 @st.cache_data(ttl=5)
 def load_data():
     try:
-        response = requests.get(API_URL, timeout=10)
+        response = requests.get(API_URL, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if len(data) > 1:
@@ -154,9 +172,9 @@ def load_data():
                 df[date_col] = pd.to_datetime(df[date_col], dayfirst=True, errors='coerce')
                 return df
             else:
-                st.warning("⚠️ ยังไม่มีข้อมูลในระบบ")
+                st.warning("⚠️ ยังไม่มีข้อมูลในตาราง")
         else:
-            st.error(f"❌ API Error: {response.status_code}")
+            st.error(f"❌ ไม่สามารถเชื่อมต่อกับ Google Sheets ได้ (Status: {response.status_code})")
         return pd.DataFrame()
     except Exception as e: 
         st.error(f"❌ โหลดข้อมูลล้มเหลว: {e}")
@@ -183,7 +201,6 @@ if menu == "📊 Dashboard":
             status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
             risk_col = 'Risk Level' if 'Risk Level' in cols else (cols[10] if len(cols) > 10 else cols[-1])
             
-            # --- KPI Cards ---
             total_cases = len(df)
             completed_cases = len(df[df[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete|ไม่พบประเด็น', na=False, case=False)])
             pending_cases = len(df[df[status_col].astype(str).str.contains('รอดำเนินการ|กำลังดำเนินการ|Pending|In Progress', na=False, case=False)])
@@ -347,7 +364,7 @@ elif menu == "📅 Calendar & Case Detail":
                     sel = st.selectbox("เคสในวันนี้:", list(opts.keys()))
                     st.session_state.selected_case_idx = opts[sel]
                 else:
-                    st.info("ไม่มีเคสความเสี่ยงในวันนี้")
+                    st.info("ไม่มีเคสในวันนี้")
                     st.session_state.selected_case_idx = None
             else:
                 if not monthly_data.empty:
@@ -386,28 +403,39 @@ elif menu == "📅 Calendar & Case Detail":
                     </div>
                 """), unsafe_allow_html=True)
                 
-                # 📌 ดึงรูปภาพอัตโนมัติ
+                # 📌 ดึงและแปลง URL จากสูตร =IMAGE ของ Google Sheets หรือถอดรหัส Base64
                 st.markdown("<h4 style='color:#a1a1aa; font-size:15px; margin-top:15px;'>📸 ภาพประกอบ</h4>", unsafe_allow_html=True)
+                
                 img_before_col = next((c for c in cols if 'before' in c.lower() or 'ก่อน' in c), cols[8] if len(cols) > 8 else None)
                 img_after_col = next((c for c in cols if 'after' in c.lower() or 'หลัง' in c), cols[9] if len(cols) > 9 else None)
 
-                img_b = str(selected_case[img_before_col]).strip() if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
-                img_a = str(selected_case[img_after_col]).strip() if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
+                img_b_raw = selected_case[img_before_col]
+                img_a_raw = selected_case[img_after_col]
+
+                img_b_url = extract_and_convert_url(img_b_raw)
+                img_a_url = extract_and_convert_url(img_a_raw)
 
                 i_col1, i_col2 = st.columns(2)
+                
                 with i_col1:
-                    if img_b.startswith('http'): st.image(img_b, caption="🔴 ก่อน", use_container_width=True)
-                    elif len(img_b) > 50:
-                        try: st.image(decode_base64_img(img_b), caption="🔴 ก่อน", use_container_width=True)
-                        except: st.error("รูปเสีย")
-                    else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
+                    if img_b_url.startswith('http'): 
+                        st.image(img_b_url, caption="🔴 ก่อนแก้ไข", use_container_width=True)
+                    elif len(img_b_url) > 50:
+                        img_data = decode_base64_img(img_b_url)
+                        if img_data: st.image(img_data, caption="🔴 ก่อนแก้ไข", use_container_width=True)
+                        else: st.error("ไม่สามารถถอดรหัสภาพได้")
+                    else: 
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
 
                 with i_col2:
-                    if img_a.startswith('http'): st.image(img_a, caption="🟢 หลัง", use_container_width=True)
-                    elif len(img_a) > 50:
-                        try: st.image(decode_base64_img(img_a), caption="🟢 หลัง", use_container_width=True)
-                        except: st.error("รูปเสีย")
-                    else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
+                    if img_a_url.startswith('http'): 
+                        st.image(img_a_url, caption="🟢 หลังแก้ไข", use_container_width=True)
+                    elif len(img_a_url) > 50:
+                        img_data = decode_base64_img(img_a_url)
+                        if img_data: st.image(img_data, caption="🟢 หลังแก้ไข", use_container_width=True)
+                        else: st.error("ไม่สามารถถอดรหัสภาพได้")
+                    else: 
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
 
 # ==========================================
 # MODULE 3: REPORT NEW CASE
