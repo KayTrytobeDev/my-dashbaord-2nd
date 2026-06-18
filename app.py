@@ -15,26 +15,33 @@ st.set_page_config(page_title="Risk Tracker System", page_icon="🛡️", layout
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 # ==========================================
-# 2. PREMIUM MODERN DASHBOARD CSS
+# 2. PREMIUM DARK MODE CSS (พื้นหลังดำสนิท)
 # ==========================================
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
-    html, body, [data-testid="stAppViewContainer"] {
+    /* ฉากหลังดำสนิทตัดกับตัวหนังสือขาว */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        background-color: #f4f6f9;
+        background-color: #000000 !important;
+        color: #ffffff !important;
     }
     
-    /* ล็อกสีปุ่มในปฏิทินให้มองเห็นชัดเจนใน Light Mode */
+    [data-testid="stSidebar"] {
+        background-color: #09090b !important;
+        border-right: 1px solid #1f1f23;
+    }
+
+    /* ล็อกสีปุ่มในปฏิทินให้มองเห็นชัดเจนใน Dark Mode */
     div[data-testid="stButton"] > button {
-        border: 1px solid #e2e8f0 !important;
-        background-color: #ffffff !important;
-        color: #1e293b !important;
+        background-color: #18181b !important; 
+        color: #ffffff !important; 
+        border: 1px solid #33333a !important;
     }
     div[data-testid="stButton"] > button:hover {
-        border-color: #4361ee !important;
-        color: #4361ee !important;
+        border-color: #0a84ff !important;
+        color: #0a84ff !important;
     }
     div[data-testid="stButton"] > button[kind="primary"] {
         background-color: #2ec4b6 !important;
@@ -42,50 +49,58 @@ st.markdown("""
         color: #ffffff !important;
     }
     
+    /* บังคับฟอร์ม Input ให้เป็นสีเข้ม */
+    div[data-baseweb="select"] > div, input, textarea {
+        background-color: #18181b !important;
+        color: #ffffff !important;
+        border-color: #33333a !important;
+    }
+    label, div[data-testid="stWidgetLabel"] p { color: #e5e5ea !important; }
+    
     /* --- Dashboard Widget Card --- */
     .dashboard-card {
-        background: #ffffff; padding: 24px; border-radius: 12px;
-        border: 1px solid #eef2f5; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 24px;
+        background: #111114; padding: 24px; border-radius: 12px;
+        border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 24px;
     }
     .dashboard-card-title {
-        font-size: 16px; font-weight: 600; color: #2c3e50;
+        font-size: 16px; font-weight: 600; color: #ffffff;
         margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
 
     /* --- Custom KPI Cards --- */
     .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
     .kpi-card {
-        background: #ffffff; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-top: 1px solid #f1f3f5; border-right: 1px solid #f1f3f5; border-bottom: 1px solid #f1f3f5;
+        background: #111114; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-top: 1px solid #222227; border-right: 1px solid #222227; border-bottom: 1px solid #222227;
         transition: transform 0.2s;
     }
     .kpi-card:hover { transform: translateY(-3px); }
-    .kpi-label { font-size: 13px; font-weight: 500; color: #8a99a8; text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 28px; font-weight: 700; color: #1e293b; margin: 8px 0 4px 0; }
-    .kpi-subtext { font-size: 12px; color: #64748b; }
+    .kpi-label { font-size: 13px; font-weight: 500; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: #ffffff; margin: 8px 0 4px 0; }
+    .kpi-subtext { font-size: 12px; color: #8e8e93; }
     
-    .kpi-total { border-left-color: #4361ee; }
-    .kpi-success { border-left-color: #2ec4b6; }
-    .kpi-pending { border-left-color: #ff9f1c; }
-    .kpi-rate { border-left-color: #7209b7; }
+    .kpi-total { border-left-color: #0a84ff; }
+    .kpi-success { border-left-color: #30d158; }
+    .kpi-pending { border-left-color: #ff9f0a; }
+    .kpi-rate { border-left-color: #bf5af2; }
 
     /* --- Case Detail Card --- */
     .responsive-card {
-        background-color: #ffffff; padding: 24px; border-radius: 12px; 
-        border: 1px solid #eef2f5; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 20px; word-wrap: break-word;
+        background-color: #111114; padding: 24px; border-radius: 12px; 
+        border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 20px; word-wrap: break-word; color: #ffffff;
     }
-    .card-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 18px; }
-    .card-title-text { font-size: 16px; font-weight: 700; color: #1e293b; }
-    .card-date-text { color: #94a3b8; font-size: 13px; font-weight: 500; }
-    .case-p { margin: 10px 0; font-size: 14px; color: #334155; line-height: 1.6; }
-    .case-p-highlight { color: #4361ee; font-weight: 600; }
+    .card-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222227; padding-bottom: 14px; margin-bottom: 18px; }
+    .card-title-text { font-size: 16px; font-weight: 700; color: #ffffff; }
+    .card-date-text { color: #a1a1aa; font-size: 13px; font-weight: 500; }
+    .case-p { margin: 10px 0; font-size: 14px; color: #e5e5ea; line-height: 1.6; }
+    .case-p-highlight { color: #0a84ff; font-weight: 600; }
     
     /* --- Timeline --- */
-    .timeline-container { background-color: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e2e8f0; margin-top: 20px; }
+    .timeline-container { background-color: #16161a; border-radius: 12px; padding: 18px; border: 1px solid #222227; margin-top: 20px; }
     .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .timeline-row { border-left: 2px solid #cbd5e1; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #475569; }
-    .timeline-dot { position: absolute; left: -6px; top: 2px; color: #94a3b8; font-size: 11px; }
-    .empty-state-box { background-color: #ffffff; padding: 50px 20px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1; }
+    .timeline-row { border-left: 2px solid #3a3a3c; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #d1d1d6; }
+    .timeline-dot { position: absolute; left: -6px; top: 2px; color: #a1a1aa; font-size: 11px; }
+    .empty-state-box { background-color: #111114; padding: 50px 20px; border-radius: 12px; text-align: center; border: 1px dashed #3a3a3c; color: #ffffff; }
 
     @media (max-width: 768px) {
         .dashboard-card { padding: 16px; }
@@ -133,11 +148,11 @@ menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "�
 # MODULE 1: DASHBOARD
 # ==========================================
 if menu == "📊 Dashboard":
-    st.markdown("<h2 style='color: #1e293b; font-weight: 700; margin-bottom: 20px;'>📊 Overview & Risk Analytics</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #ffffff; font-weight: 700; margin-bottom: 20px;'>📊 Overview & Risk Analytics</h2>", unsafe_allow_html=True)
     
     if not df.empty:
         try:
-            # 📌 ระบบดึงหัวตารางอัจฉริยะ (อิงจากชื่อ Column ใน Google Sheets จริงๆ)
+            # 📌 ระบบดึงหัวตารางอัจฉริยะ 
             date_col = df.columns[0]
             cols = df.columns.tolist()
             status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
@@ -175,11 +190,12 @@ if menu == "📊 Dashboard":
             """)
             st.markdown(kpi_html, unsafe_allow_html=True)
             
+            # ปรับชุดสีให้สว่างสู้พื้นหลังดำ
             status_colors = {
-                'ดำเนินการเรียบร้อย': '#2ec4b6', 'เรียบร้อย': '#2ec4b6', 'Complete': '#2ec4b6',
-                'กำลังดำเนินการ': '#ff9f1c', 'In Progress': '#ff9f1c',
-                'รอดำเนินการ': '#e63946', 'Pending': '#e63946',
-                'ไม่พบประเด็น': '#94a3b8', 'No Issue': '#94a3b8'
+                'ดำเนินการเรียบร้อย': '#30d158', 'เรียบร้อย': '#30d158', 'Complete': '#30d158',
+                'กำลังดำเนินการ': '#ff9f0a', 'In Progress': '#ff9f0a',
+                'รอดำเนินการ': '#ff453a', 'Pending': '#ff453a',
+                'ไม่พบประเด็น': '#8e8e93', 'No Issue': '#8e8e93'
             }
 
             g_col1, g_col2 = st.columns(2)
@@ -189,8 +205,9 @@ if menu == "📊 Dashboard":
                 status_counts.columns = ['Status', 'Count']
                 
                 fig_pie = px.pie(status_counts, values='Count', names='Status', hole=0.55, color='Status', color_discrete_map=status_colors)
-                fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#fff', width=2)))
-                fig_pie.update_layout(showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=280, paper_bgcolor='rgba(0,0,0,0)')
+                # 📌 บังคับกราฟใช้ Theme Dark
+                fig_pie.update_layout(template='plotly_dark', showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#111114', width=2)))
                 st.plotly_chart(fig_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
@@ -199,30 +216,31 @@ if menu == "📊 Dashboard":
                 risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
                 risk_counts.columns = ['Risk', 'Count']
                 
-                # 📌 Fix: เพิ่มตัวเลขบนกราฟ และบังคับสีฟอนต์เป็นสีเข้ม
-                fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#e63946', 'Medium': '#ffb703', 'Low': '#2ec4b6'})
-                fig_bar.update_traces(textposition='outside', textfont=dict(color='#1e293b', size=14))
-                fig_bar.update_layout(showlegend=False, xaxis_title="", yaxis_title="จำนวนเคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                fig_bar.update_yaxes(gridcolor='#f1f5f9')
+                # 📌 บังคับฟอนต์กราฟและ Theme Dark
+                fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#ff453a', 'Medium': '#ffb703', 'Low': '#30d158'})
+                fig_bar.update_traces(textposition='outside', textfont=dict(color='#ffffff', size=14))
+                fig_bar.update_layout(template='plotly_dark', showlegend=False, xaxis_title="", yaxis_title="จำนวนเคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig_bar.update_yaxes(gridcolor='#222227')
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
             df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
             
-            # 📌 Fix: บังคับฟอนต์กราฟกลุ่ม
+            # 📌 บังคับฟอนต์กราฟกลุ่มและ Theme Dark
             fig_cross = px.bar(
                 df_cross, x=risk_col, y='จำนวนเคส', color=status_col, barmode='group',
                 text='จำนวนเคส', color_discrete_map=status_colors,
                 category_orders={risk_col: ["Low", "Medium", "High"]}
             )
-            fig_cross.update_traces(textposition='outside', textfont=dict(color='#1e293b', size=13), marker=dict(line=dict(width=0)))
+            fig_cross.update_traces(textposition='outside', textfont=dict(color='#ffffff', size=13), marker=dict(line=dict(width=0)))
             fig_cross.update_layout(
+                template='plotly_dark',
                 xaxis_title="ระดับความเสี่ยง (Risk Level)", yaxis_title="จำนวนบันทึก (เคส)",
                 legend_title="สถานะปัจจุบัน", margin=dict(t=30, b=10, l=10, r=10), height=340,
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
             )
-            fig_cross.update_yaxes(gridcolor='#f1f5f9')
+            fig_cross.update_yaxes(gridcolor='#222227')
             st.plotly_chart(fig_cross, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
@@ -242,7 +260,6 @@ if menu == "📊 Dashboard":
 # ==========================================
 elif menu == "📅 Calendar & Case Detail":
     if not df.empty:
-        # 📌 ระบบดึงคอลัมน์อัจฉริยะ สำหรับหน้าปฏิทิน
         cols = df.columns.tolist()
         date_col = cols[0]
         topic_col = 'Topic/risk finding' if 'Topic/risk finding' in cols else cols[1]
@@ -280,7 +297,7 @@ elif menu == "📅 Calendar & Case Detail":
                 
                 header = st.columns(7)
                 for i, name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
-                    header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#64748b; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
+                    header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#a1a1aa; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
                 
                 for week in month_days:
                     cols_grid = st.columns(7)
@@ -299,7 +316,7 @@ elif menu == "📅 Calendar & Case Detail":
                                 st.rerun()
                             
                             if has_case and not is_selected:
-                                cols_grid[i].markdown("<p style='text-align:center; margin-top:-22px; margin-bottom:0px; color:#2ec4b6; font-size:18px;'>•</p>", unsafe_allow_html=True)
+                                cols_grid[i].markdown("<p style='text-align:center; margin-top:-22px; margin-bottom:0px; color:#30d158; font-size:18px;'>•</p>", unsafe_allow_html=True)
                         else:
                             cols_grid[i].write("")
 
@@ -361,11 +378,11 @@ elif menu == "📅 Calendar & Case Detail":
                 status_txt = str(selected_case[status_col]) if pd.notnull(selected_case[status_col]) else "-"
                 action_txt = str(selected_case[action_col]) if pd.notnull(selected_case[action_col]) else "-"
 
-                display_color = "#334155"
-                if "เรียบร้อย" in status_txt or "Complete" in status_txt: display_color = "#2ec4b6" 
-                elif "รอดำเนินการ" in status_txt or "Pending" in status_txt: display_color = "#e63946" 
-                elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt: display_color = "#ff9f1c" 
-                elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt: display_color = "#94a3b8" 
+                display_color = "#e5e5ea"
+                if "เรียบร้อย" in status_txt or "Complete" in status_txt: display_color = "#30d158" 
+                elif "รอดำเนินการ" in status_txt or "Pending" in status_txt: display_color = "#ff453a" 
+                elif "กำลังดำเนินการ" in status_txt or "In Progress" in status_txt: display_color = "#ff9f0a" 
+                elif "ไม่พบประเด็น" in status_txt or "No Issue" in status_txt: display_color = "#8e8e93" 
 
                 card_html = textwrap.dedent(f"""
                     <div class="responsive-card">
@@ -375,18 +392,18 @@ elif menu == "📅 Calendar & Case Detail":
                         </div>
                         <p class="case-p"><strong>Date:</strong> {display_date}</p>
                         <p class="case-p"><strong>Topic/risk finding:</strong> <span class="case-p-highlight">{selected_case[topic_col]}</span></p>
-                        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 12px 0;">
+                        <hr style="border: 0; border-top: 1px solid #222227; margin: 12px 0;">
                         <p class="case-p">📍 <strong>Location:</strong> {loc_txt}</p>
                         <p class="case-p">👤 <strong>Responsible Person:</strong> {resp_txt}</p>
                         <p class="case-p">🔄 <strong>Status:</strong> <span style="color: {display_color}; font-weight: bold;">{status_txt}</span></p>
                         <p class="case-p">🛠 <strong>Corrective Action:</strong> {action_txt}</p>
-                        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 12px 0;">
-                        <p class="case-p" style="font-weight:bold; color:#1e293b;">Risk Level: {risk_val} {risk_icon}</p>
+                        <hr style="border: 0; border-top: 1px solid #222227; margin: 12px 0;">
+                        <p class="case-p" style="font-weight:bold; color:#ffffff;">Risk Level: {risk_val} {risk_icon}</p>
                     </div>
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                st.markdown("<h4 style='color: #475569; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color: #a1a1aa; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
                 col_index_before = 8
                 col_index_after = 9
@@ -423,8 +440,8 @@ elif menu == "📅 Calendar & Case Detail":
                 timeline_html = textwrap.dedent(f"""
                     <div class="timeline-container">
                         <div class="timeline-header">
-                            <span style="font-size: 14px; font-weight: bold; color: #1e293b;">Timeline & Activity</span>
-                            <span style="color: #94a3b8; font-size: 13px;">✏️ 🖨️ 📥</span>
+                            <span style="font-size: 14px; font-weight: bold; color: #ffffff;">Timeline & Activity</span>
+                            <span style="color: #a1a1aa; font-size: 13px;">✏️ 🖨️ 📥</span>
                         </div>
                         <div class="timeline-row">
                             <span class="timeline-dot">●</span>
@@ -440,8 +457,8 @@ elif menu == "📅 Calendar & Case Detail":
             else:
                 st.markdown("""
                     <div class="empty-state-box">
-                        <h3 style="color: #94a3b8; margin-bottom: 10px;">🔍</h3>
-                        <p style="color: #64748b; font-size: 14px;">No case selected.<br>Please choose a case from the left panel.</p>
+                        <h3 style="color: #64748b; margin-bottom: 10px;">🔍</h3>
+                        <p style="color: #8e8e93; font-size: 14px;">No case selected.<br>Please choose a case from the left panel.</p>
                     </div>
                 """, unsafe_allow_html=True)
     else:
