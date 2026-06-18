@@ -254,7 +254,8 @@ if menu == "📊 Dashboard":
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             # --- กล่องสรุปเจาะลึกความเสี่ยง ---
-            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
+            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title" style="justify-content: center; font-size: 22px; width: 100%; gap: 12px;">📊 เจาะลึกสถานะตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
+            risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
             
             total_high = len(df[df[risk_col].astype(str).str.strip().str.title() == 'High'])
             total_medium = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Medium'])
