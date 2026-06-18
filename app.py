@@ -232,7 +232,8 @@ if menu == "📊 Dashboard":
 
             g_col1, g_col2 = st.columns(2)
             with g_col1:
-                st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">💡 สัดส่วนสถานะงาน</div>', unsafe_allow_html=True)
+                # ปรับ text-align: center (จัดกึ่งกลาง) และ font-size: 22px (ขยายขนาดตัวหนังสือ) พร้อมเพิ่ม gap เป็น 12px ให้ไอคอนดูไม่ติดตัวหนังสือเกินไปครับ
+                st.markdown('<div class="dashboard-card"><div class="dashboard-card-title" style="justify-content: center; font-size: 22px; width: 100%; gap: 12px;">💡 สัดส่วนสถานะงาน</div>', unsafe_allow_html=True)
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 fig_pie = px.pie(status_counts, values='Count', names='Status', hole=0.55, color='Status', color_discrete_map=status_colors)
@@ -242,7 +243,7 @@ if menu == "📊 Dashboard":
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             with g_col2:
-                st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">⚡ ความเสี่ยงภาพรวม</div>', unsafe_allow_html=True)
+                st.markdown('<div class="dashboard-card"><div class="dashboard-card-title" style="justify-content: center; font-size: 22px; width: 100%; gap: 12px;">⚡ ความเสี่ยงภาพรวม</div>', unsafe_allow_html=True)
                 risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
                 risk_counts.columns = ['Risk', 'Count']
                 fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#ff453a', 'Medium': '#ffb703', 'Low': '#30d158'})
