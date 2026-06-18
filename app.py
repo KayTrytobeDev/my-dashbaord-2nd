@@ -200,19 +200,16 @@ if menu == "📊 Dashboard":
                         <div class="kpi-subtext">🔄 บันทึกสะสมในระบบ</div>
                     </div>
                     <div class="kpi-card kpi-success">
-                        <div class="kpi-label">สำเร็จ / ไม่พบประเด็น</div>
                         <div class="kpi-value">{completed_cases}</div>
                         <div class="kpi-subtext">🟢 ปิดงานเรียบร้อยแล้ว</div>
                     </div>
                     <div class="kpi-card kpi-pending">
-                        <div class="kpi-label">รอดำเนินการ / กำลังทำ</div>
                         <div class="kpi-value">{pending_cases}</div>
                         <div class="kpi-subtext">⏳ อยู่ระหว่างกระบวนการ</div>
                     </div>
                     <div class="kpi-card kpi-rate">
-                        <div class="kpi-label">อัตราความสำเร็จภาพรวม</div>
                         <div class="kpi-value">{success_rate:.1f}%</div>
-                        <div class="kpi-subtext">📈 ดัชนีประสิทธิภาพระบบ</div>
+                        <div class="kpi-subtext">📈 อัตราความสำเร็จภาพรวม</div>
                     </div>
                 </div>
             """)
