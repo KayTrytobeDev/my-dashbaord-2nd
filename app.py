@@ -8,14 +8,14 @@ import base64
 import textwrap
 import io
 from PIL import Image
-import re  # <--- เพิ่มตัวจัดการข้อความ (สำคัญสำหรับดึงลิงก์จากสูตร IMAGE)
+import re  # สำหรับดึงลิงก์จากสูตร IMAGE
 
 # ==========================================
 # 1. SET PAGE CONFIG & SYSTEM INITIALIZATION
 # ==========================================
 st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layout="wide")
 
-# 📌 เปลี่ยนลิงก์ด้านล่างนี้ให้เป็นลิงก์ Web App (Deploy ล่าสุด) ของพี่ครับ
+# 📌 นำลิงก์ Web App ของพี่มาวางตรงนี้ครับ
 API_URL = "https://script.google.com/macros/s/AKfycby1dCW6VBBUQnx1fSi3OAsN5Tf7RGjTKaEDxmAxf8lyUK9B9DQcUUxM2ekWxP1vGjuM/exec"
 
 # ==========================================
@@ -110,7 +110,7 @@ st.markdown("""
 # 3. HELPER FUNCTIONS (ระบบจัดการรูปภาพ)
 # ==========================================
 def compress_image_to_b64(uploaded_file):
-    """บีบอัดภาพก่อนส่ง เพื่อให้ข้อความสั้นลงไม่เกินลิมิต Sheets"""
+    """บีบอัดภาพเพื่อประหยัดพื้นที่และส่งข้อมูลไวขึ้น"""
     if uploaded_file is None:
         return ""
     try:
@@ -126,7 +126,7 @@ def compress_image_to_b64(uploaded_file):
         return ""
 
 def decode_base64_img(b64_str):
-    """ถอดรหัส Base64 เป็นรูปภาพ"""
+    """ถอดรหัส Base64 (กรณีส่งรูปปกติแบบไม่พึ่ง Drive)"""
     try:
         if "," in b64_str: 
             b64_str = b64_str.split(",")[1]
@@ -136,26 +136,30 @@ def decode_base64_img(b64_str):
         return None
 
 def extract_and_convert_url(raw_text):
-    """ดึง URL ออกจากสูตร =IMAGE() และแปลงลิงก์ Google Drive เป็น Direct Link"""
-    if not raw_text or str(raw_text).lower() in ["nan", "-", "none"]:
+    """
+    ฟังก์ชันอัจฉริยะ: ดึง URL ออกจากสูตร =IMAGE() และแปลงลิงก์ Google Drive 
+    เป็นลิงก์แบบ Thumbnail เพื่อให้โชว์รูปได้แน่นอน 100% ไม่โดนบล็อก
+    """
+    if not raw_text or str(raw_text).lower() in ["nan", "-", "none", ""]:
         return ""
     
     url = str(raw_text).strip()
     
-    # ดึงเฉพาะ URL ออกมาจากสูตร =IMAGE("...")
+    # ดึงเฉพาะ URL ที่อยู่ในเครื่องหมายคำพูดของสูตร =IMAGE("...")
     match_img = re.search(r'IMAGE\("([^"]+)"\)', url, re.IGNORECASE)
     if match_img:
         url = match_img.group(1)
         
-  # แปลงลิงก์ Google Drive ให้เป็นลิงก์ตรงสำหรับโชว์รูป
-    if "drive.google.com/file/d/" in url:
-        match_id = re.search(r'file/d/([a-zA-Z0-9_-]+)', url)
+    # แปลงลิงก์ Drive ทั่วไป เป็นลิงก์ Thumbnail เพื่อกันโดน Google บล็อก
+    if "drive.google.com/file/d/" in url or "drive.google.com/uc" in url:
+        # หาชุดรหัส File ID
+        match_id = re.search(r'([-\w]{25,})', url)
         if match_id:
             file_id = match_id.group(1)
-            # ❌ ลบบรรทัดเดิมทิ้ง: return f"https://drive.google.com/uc?export=view&id={file_id}"
-            
-            # ✅ ใส่บรรทัดใหม่นี้แทน (ดึงแบบ Thumbnail ทะลุบล็อก):
+            # ใช้ API ดึงภาพขนาดย่อความละเอียดสูง (w800) ซึ่งจะโหลดไวและไม่แครช
             return f"https://drive.google.com/thumbnail?id={file_id}&sz=w800"
+            
+    return url
 
 # ==========================================
 # 4. DATA CORE
@@ -245,7 +249,7 @@ if menu == "📊 Dashboard":
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-            # --- กล่องสรุปเจาะลึก ---
+            # --- กล่องสรุปเจาะลึกความเสี่ยง ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะตามระดับความเสี่ยง</div>', unsafe_allow_html=True)
             
             total_high = len(df[df[risk_col].astype(str).str.strip().str.title() == 'High'])
@@ -301,7 +305,7 @@ if menu == "📊 Dashboard":
             st.dataframe(df_table.astype(str), use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-        except Exception as e: st.error(f"❌ Error: {e}")
+        except Exception as e: st.error(f"❌ Error Dashboard: {e}")
 
 # ==========================================
 # MODULE 2: CALENDAR & CASE DETAIL 
@@ -404,8 +408,8 @@ elif menu == "📅 Calendar & Case Detail":
                     </div>
                 """), unsafe_allow_html=True)
                 
-                # 📌 ดึงและแปลง URL จากสูตร =IMAGE ของ Google Sheets หรือถอดรหัส Base64
-                st.markdown("<h4 style='color:#a1a1aa; font-size:15px; margin-top:15px;'>📸 ภาพประกอบ</h4>", unsafe_allow_html=True)
+                # --- 📌 แสดงรูปภาพไซส์ใหญ่พิเศษ (คลิกขยายได้) ---
+                st.markdown("<h4 style='color:#a1a1aa; font-size:16px; margin-top:20px; border-bottom:1px solid #222227; padding-bottom:10px;'>📸 ภาพประกอบ (คลิกเพื่อขยายเต็มจอ)</h4>", unsafe_allow_html=True)
                 
                 img_before_col = next((c for c in cols if 'before' in c.lower() or 'ก่อน' in c), cols[8] if len(cols) > 8 else None)
                 img_after_col = next((c for c in cols if 'after' in c.lower() or 'หลัง' in c), cols[9] if len(cols) > 9 else None)
@@ -413,30 +417,36 @@ elif menu == "📅 Calendar & Case Detail":
                 img_b_raw = selected_case[img_before_col]
                 img_a_raw = selected_case[img_after_col]
 
+                # ส่งให้ฟังก์ชันดึง URL อัตโนมัติ (ไม่ว่าจะเป็นลิงก์ Drive หรือสูตร IMAGE)
                 img_b_url = extract_and_convert_url(img_b_raw)
                 img_a_url = extract_and_convert_url(img_a_raw)
+
+                # ปรับความกว้างรูปล็อกตายตัว เพื่อความคมชัดใหญ่สะใจ
+                IMAGE_WIDTH = 450
 
                 i_col1, i_col2 = st.columns(2)
                 
                 with i_col1:
+                    st.markdown("<div style='color: #ff453a; font-weight: bold; margin-bottom: 8px;'>🔴 ก่อนแก้ไข</div>", unsafe_allow_html=True)
                     if img_b_url.startswith('http'): 
-                        st.image(img_b_url, caption="🔴 ก่อนแก้ไข", use_container_width=True)
+                        st.image(img_b_url, width=IMAGE_WIDTH)
                     elif len(img_b_url) > 50:
                         img_data = decode_base64_img(img_b_url)
-                        if img_data: st.image(img_data, caption="🔴 ก่อนแก้ไข", use_container_width=True)
+                        if img_data: st.image(img_data, width=IMAGE_WIDTH)
                         else: st.error("ไม่สามารถถอดรหัสภาพได้")
                     else: 
-                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", width=150)
 
                 with i_col2:
+                    st.markdown("<div style='color: #30d158; font-weight: bold; margin-bottom: 8px;'>🟢 หลังแก้ไข</div>", unsafe_allow_html=True)
                     if img_a_url.startswith('http'): 
-                        st.image(img_a_url, caption="🟢 หลังแก้ไข", use_container_width=True)
+                        st.image(img_a_url, width=IMAGE_WIDTH)
                     elif len(img_a_url) > 50:
                         img_data = decode_base64_img(img_a_url)
-                        if img_data: st.image(img_data, caption="🟢 หลังแก้ไข", use_container_width=True)
+                        if img_data: st.image(img_data, width=IMAGE_WIDTH)
                         else: st.error("ไม่สามารถถอดรหัสภาพได้")
                     else: 
-                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพ", use_container_width=True)
+                        st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", width=150)
 
 # ==========================================
 # MODULE 3: REPORT NEW CASE
