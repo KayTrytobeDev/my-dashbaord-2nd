@@ -226,7 +226,6 @@ if menu == "📊 Dashboard":
             # --- 🔥 กล่องสรุปรวม + เจาะลึกสถานะตามระดับความเสี่ยง ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะการทำงาน (แยกตามระดับความเสี่ยง)</div>', unsafe_allow_html=True)
             
-            # 1. กล่องสรุปจำนวนรวมของแต่ละระดับความเสี่ยง
             total_high = len(df[df[risk_col].astype(str).str.strip().str.title() == 'High'])
             total_medium = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Medium'])
             total_low = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Low'])
@@ -250,14 +249,12 @@ if menu == "📊 Dashboard":
             st.markdown(risk_summary_html, unsafe_allow_html=True)
             st.markdown("<hr style='border: 1px solid #222227; margin: 20px 0;'>", unsafe_allow_html=True)
             
-            # 2. ปุ่มกดเลือกความเสี่ยง เพื่อดูข้อมูลเจาะลึก
             selected_risk = st.radio(
                 "🎯 เลือกระดับความเสี่ยงเพื่อดูสถานะปัจจุบันแบบละเอียด:",
                 ["High", "Medium", "Low"],
                 horizontal=True
             )
             
-            # 3. กรองข้อมูลเฉพาะระดับความเสี่ยงที่เลือก
             df_filtered_risk = df[df[risk_col].astype(str).str.strip().str.title() == selected_risk.title()]
             
             r_pending = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('รอดำเนินการ|Pending', na=False, case=False)])
@@ -265,7 +262,6 @@ if menu == "📊 Dashboard":
             r_completed = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('เรียบร้อย|สำเร็จ|Complete', na=False, case=False)])
             r_no_issue = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('ไม่พบประเด็น|No Issue', na=False, case=False)])
             
-            # 4. สร้างกล่องย่อยแสดงสถานะ
             risk_box_html = f"""
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
                     <div style="background-color: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -449,36 +445,40 @@ elif menu == "📅 Calendar & Case Detail":
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
+                # --- 📌 อัปเดตล่าสุด: ค้นหาคอลัมน์รูปอัตโนมัติและแก้รหัส Base64 ---
                 st.markdown("<h4 style='color: #a1a1aa; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
-                col_index_before = 8
-                col_index_after = 9
-                img_before_col = df.columns[col_index_before] if len(df.columns) > col_index_before else None 
-                img_after_col = df.columns[col_index_after] if len(df.columns) > col_index_after else None  
+                img_before_col = next((c for c in cols if 'before' in c.lower() or 'ก่อน' in c), cols[8] if len(cols) > 8 else None)
+                img_after_col = next((c for c in cols if 'after' in c.lower() or 'หลัง' in c), cols[9] if len(cols) > 9 else None)
 
                 img_b_url = str(selected_case[img_before_col]).strip() if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
                 img_a_url = str(selected_case[img_after_col]).strip() if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
+
+                def decode_base64_img(b64_str):
+                    if "," in b64_str: b64_str = b64_str.split(",")[1]
+                    b64_str += "=" * ((4 - len(b64_str) % 4) % 4) 
+                    return base64.b64decode(b64_str)
 
                 i_col1, i_col2 = st.columns(2)
                 
                 with i_col1:
                     if img_b_url.startswith('http'):
                         st.image(img_b_url, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
-                    elif len(img_b_url) > 100:
+                    elif len(img_b_url) > 50:
                         try:
-                            image_bytes = base64.b64decode(img_b_url)
-                            st.image(image_bytes, caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
-                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
+                            st.image(decode_base64_img(img_b_url), caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
+                        except Exception as e: 
+                            st.error(f"รูปภาพก่อนแก้ไขขัดข้อง")
                     else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
 
                 with i_col2:
                     if img_a_url.startswith('http'):
                         st.image(img_a_url, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
-                    elif len(img_a_url) > 100:
+                    elif len(img_a_url) > 50:
                         try:
-                            image_bytes = base64.b64decode(img_a_url)
-                            st.image(image_bytes, caption="🟢 หลังแก้ไข (After)", use_container_width=True)
-                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
+                            st.image(decode_base64_img(img_a_url), caption="🟢 หลังแก้ไข (After)", use_container_width=True)
+                        except Exception as e: 
+                            st.error(f"รูปภาพหลังแก้ไขขัดข้อง")
                     else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
                 
                 st.markdown("---")
