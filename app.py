@@ -509,6 +509,34 @@ elif menu == "📅 Calendar & Case Detail":
                 """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ ไม่มีข้อมูลเพื่อแสดงผลบนปฏิทิน")
+import io
+from PIL import Image
+
+# ฟังก์ชันบีบอัดรูปภาพก่อนแปลงเป็น Base64
+def compress_image_to_b64(uploaded_file):
+    if uploaded_file is None:
+        return ""
+    try:
+        # เปิดรูป
+        img = Image.open(uploaded_file)
+        # แปลงเป็น RGB (ป้องกันปัญหาไฟล์ PNG แบบโปร่งใส)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # ย่อขนาดรูป (ลด Resolution) ให้กว้างสุดแค่ 600px ก็พอสำหรับการดูบนเว็บ
+        max_size = (600, 600)
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # บีบอัดคุณภาพรูป (Quality=50) แล้วบันทึกลงหน่วยความจำ
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG", quality=50)
+        
+        # แปลงเป็น Base64
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return img_str
+    except Exception as e:
+        st.error(f"ย่อรูปภาพล้มเหลว: {e}")
+        return ""
 
 # ==========================================
 # MODULE 3: REPORT NEW CASE
@@ -525,23 +553,28 @@ elif menu == "📝 Report New Case":
         f_action = st.text_area("แนวทางแก้ไข (Corrective Action)")
         f_risk = st.selectbox("ระดับความเสี่ยง (Risk Level)", ["Low", "Medium", "High"])
         
-        up_before = st.file_uploader("รูปก่อนแก้ไข")
-        up_after = st.file_uploader("รูปหลังแก้ไข")
+        up_before = st.file_uploader("รูปก่อนแก้ไข", type=['png', 'jpg', 'jpeg'])
+        up_after = st.file_uploader("รูปหลังแก้ไข", type=['png', 'jpg', 'jpeg'])
         
         if st.form_submit_button("🚀 บันทึกข้อมูล"):
             try:
+                # เรียกใช้ฟังก์ชันบีบอัดที่เราเพิ่งสร้าง
+                b64_before = compress_image_to_b64(up_before)
+                b64_after = compress_image_to_b64(up_after)
+                
                 payload = {
                     "date": str(f_date), "topic": f_topic, "location": f_loc,
                     "responsible": f_resp, "status": f_status, "action": f_action, "risk": f_risk,
-                    "imgBeforeBase64": base64.b64encode(up_before.read()).decode() if up_before else "",
+                    "imgBeforeBase64": b64_before,
                     "imgBeforeName": up_before.name if up_before else "",
-                    "imgAfterBase64": base64.b64encode(up_after.read()).decode() if up_after else "",
+                    "imgAfterBase64": b64_after,
                     "imgAfterName": up_after.name if up_after else ""
                 }
-                res = requests.post(API_URL, json=payload, timeout=15)
+                res = requests.post(API_URL, json=payload, timeout=20) # เพิ่ม timeout เผื่อเน็ตช้าตอนส่งรูป
                 if res.status_code == 200: 
-                    st.success("🎉 บันทึกข้อมูลสำเร็จ! อัปเดตในระบบเรียบร้อย")
+                    st.success("🎉 บันทึกข้อมูลพร้อมรูปภาพสำเร็จ!")
                     st.cache_data.clear() 
-                else: st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
+                else: 
+                    st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
             except Exception as e:
                 st.error(f"❌ เกิดข้อผิดพลาดขณะส่งข้อมูล: {e}")
