@@ -193,7 +193,7 @@ df = load_data()
 # ==========================================
 # 5. SIDEBAR NAVIGATION
 # ==========================================
-st.sidebar.title("🛡️ Risk Tracker")
+st.sidebar.title("🛡️FMS ROUND🛡️")
 menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
 
 # ==========================================
