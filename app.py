@@ -251,7 +251,7 @@ if menu == "📊 Dashboard":
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             # --- 🔥 ส่วนที่ปรับแต่งแบบครอสแท็บแยกกลุ่ม (Risk Level vs Status) ---
-            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง (แถว K & E)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 สรุปสถานะการทำงานแยกตามระดับความเสี่ยง </div>', unsafe_allow_html=True)
             df_cross = df.groupby([risk_col, status_col]).size().reset_index(name='จำนวนเคส')
             
             fig_cross = px.bar(
