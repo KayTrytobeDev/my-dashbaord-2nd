@@ -16,7 +16,7 @@ import re  # <--- เพิ่มตัวจัดการข้อควา�
 st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layout="wide")
 
 # 📌 เปลี่ยนลิงก์ด้านล่างนี้ให้เป็นลิงก์ Web App (Deploy ล่าสุด) ของพี่ครับ
-API_URL = "https://script.google.com/macros/s/AKfycbz_wuFoFx8ZOwvcQDkQGCP0gDhNv3N092dD4y4vtO2a6rO593q9p_GpRAsmo8Mh9DQ/exec"
+API_URL = "https://script.google.com/macros/s/AKfycby1dCW6VBBUQnx1fSi3OAsN5Tf7RGjTKaEDxmAxf8lyUK9B9DQcUUxM2ekWxP1vGjuM/exec"
 
 # ==========================================
 # 2. PREMIUM DARK MODE CSS
