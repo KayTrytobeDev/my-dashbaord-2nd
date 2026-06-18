@@ -6,6 +6,8 @@ from datetime import datetime
 import plotly.express as px
 import base64
 import textwrap
+import io
+from PIL import Image
 
 # ==========================================
 # 1. SET PAGE CONFIG & SYSTEM INITIALIZATION
@@ -16,7 +18,7 @@ st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layou
 API_URL = "https://script.google.com/macros/s/AKfycbwLPuQzhvnuLBCsrRz-iPyOtwt-N_njyHORXN8FseVpL2-Pt7m7TqZaj3uHTkdlWTwA/exec"
 
 # ==========================================
-# 2. PREMIUM DARK MODE CSS
+# 2. PREMIUM DARK MODE CSS (แก้ไขปัญหาการมองเห็นครบทุกจุด)
 # ==========================================
 st.markdown("""
     <style>
@@ -34,7 +36,7 @@ st.markdown("""
         border-right: 1px solid #1f1f23;
     }
 
-    /* ล็อกสีปุ่มให้มองเห็นชัดเจนใน Dark Mode */
+    /* 🔥 บังคับสีปุ่มปฏิทินและระบบให้เป็นพื้นดำ-ตัวหนังสือขาว ไม่ให้กลืนกับปฏิทิน */
     div[data-testid="stButton"] > button {
         background-color: #18181b !important; 
         color: #ffffff !important; 
@@ -50,7 +52,7 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* บังคับฟอร์ม Input ให้เป็นสีเข้ม */
+    /* 🔥 บังคับฟอร์ม Selectbox / Input / Textarea ให้เป็นสีเข้มตัวหนังสือขาวชัดเจน */
     div[data-baseweb="select"] > div, input, textarea {
         background-color: #18181b !important;
         color: #ffffff !important;
@@ -68,7 +70,7 @@ st.markdown("""
         margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
 
-    /* --- Custom KPI Cards --- */
+    /* --- Custom KPI Cards แถวบนสุด --- */
     .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
     .kpi-card {
         background: #111114; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
@@ -85,7 +87,7 @@ st.markdown("""
     .kpi-pending { border-left-color: #ff9f0a; }
     .kpi-rate { border-left-color: #bf5af2; }
 
-    /* --- Case Detail Card --- */
+    /* --- Case Detail Card ฝั่งขวาของปฏิทิน --- */
     .responsive-card {
         background-color: #111114; padding: 24px; border-radius: 12px; 
         border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 20px; word-wrap: break-word; color: #ffffff;
@@ -96,7 +98,7 @@ st.markdown("""
     .case-p { margin: 10px 0; font-size: 14px; color: #e5e5ea; line-height: 1.6; }
     .case-p-highlight { color: #0a84ff; font-weight: 600; }
     
-    /* --- Timeline --- */
+    /* --- Timeline กล่องกิจกรรมย่อ --- */
     .timeline-container { background-color: #16161a; border-radius: 12px; padding: 18px; border: 1px solid #222227; margin-top: 20px; }
     .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .timeline-row { border-left: 2px solid #3a3a3c; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #d1d1d6; }
@@ -114,7 +116,37 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. DATA CORE
+# 3. HELPER FUNCTIONS (ระบบซ่อมแซมและบีบอัดรูปภาพ)
+# ==========================================
+def compress_image_to_b64(uploaded_file):
+    """ย่อขนาดและบีบอัดไฟล์รูปภาพเพื่อให้อยู่ในขอบเขตลิมิต 50k ตัวอักษรของ Google Sheets เซลล์"""
+    if uploaded_file is None:
+        return ""
+    try:
+        img = Image.open(uploaded_file)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # ย่อขนาดให้เหมาะสมสำหรับแสดงผลบนเว็บ ไม่เปลืองพื้นที่ชีต
+        max_size = (600, 600)
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG", quality=50) # คุณภาพ 50% รหัส Base64 จะสั้นและเสถียรมาก
+        return base64.b64encode(buffered.getvalue()).decode()
+    except Exception as e:
+        return ""
+
+def decode_base64_img(b64_str):
+    """ซ่อมแซมและแปลงรหัสข้อความ Base64 กลับเป็นไฟล์รูปภาพสำหรับการแสดงผล"""
+    if "," in b64_str: 
+        b64_str = b64_str.split(",")[1]
+    # ซ่อมแซม Padding เติมสัญลักษณ์เครื่องหมายเท่ากับ (=) ป้องกันการถอดรหัสล้มเหลว
+    b64_str += "=" * ((4 - len(b64_str) % 4) % 4) 
+    return base64.b64decode(b64_str)
+
+# ==========================================
+# 4. DATA CORE INTERFACE (โหลดข้อมูลหลังบ้าน)
 # ==========================================
 @st.cache_data(ttl=5)
 def load_data():
@@ -140,7 +172,7 @@ def load_data():
 df = load_data()
 
 # ==========================================
-# 4. SIDEBAR NAVIGATION
+# 5. SIDEBAR NAVIGATION
 # ==========================================
 st.sidebar.title("🛡️ Risk Tracker")
 menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "📅 Calendar & Case Detail", "📝 Report New Case"])
@@ -153,7 +185,7 @@ if menu == "📊 Dashboard":
     
     if not df.empty:
         try:
-            # 📌 ระบบดึงหัวตารางอัจฉริยะ 
+            # 📌 ระบบดึงหัวตารางอัจฉริยะอ้างอิงจากข้อมูลไฟล์จริง
             date_col = df.columns[0]
             cols = df.columns.tolist()
             status_col = 'Status' if 'Status' in cols else (cols[4] if len(cols) > 4 else cols[-1])
@@ -191,7 +223,6 @@ if menu == "📊 Dashboard":
             """)
             st.markdown(kpi_html, unsafe_allow_html=True)
             
-            # ปรับชุดสีให้สว่างสู้พื้นหลังดำ
             status_colors = {
                 'ดำเนินการเรียบร้อย': '#30d158', 'เรียบร้อย': '#30d158', 'Complete': '#30d158',
                 'กำลังดำเนินการ': '#ff9f0a', 'In Progress': '#ff9f0a',
@@ -223,9 +254,10 @@ if menu == "📊 Dashboard":
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-            # --- 🔥 กล่องสรุปรวม + เจาะลึกสถานะตามระดับความเสี่ยง ---
+            # --- 📊 กล่องสรุปรวม + เจาะลึกสถานะตามระดับความเสี่ยง (Interactive Cards) ---
             st.markdown('<div class="dashboard-card"><div class="dashboard-card-title">📊 เจาะลึกสถานะการทำงาน (แยกตามระดับความเสี่ยง)</div>', unsafe_allow_html=True)
             
+            # กล่องสรุปจำนวนรวมถาวรของแต่ละประเภทความเสี่ยง
             total_high = len(df[df[risk_col].astype(str).str.strip().str.title() == 'High'])
             total_medium = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Medium'])
             total_low = len(df[df[risk_col].astype(str).str.strip().str.title() == 'Low'])
@@ -249,12 +281,14 @@ if menu == "📊 Dashboard":
             st.markdown(risk_summary_html, unsafe_allow_html=True)
             st.markdown("<hr style='border: 1px solid #222227; margin: 20px 0;'>", unsafe_allow_html=True)
             
+            # ปุ่มดักจิ้มเลือกประเภทความเสี่ยง
             selected_risk = st.radio(
                 "🎯 เลือกระดับความเสี่ยงเพื่อดูสถานะปัจจุบันแบบละเอียด:",
                 ["High", "Medium", "Low"],
                 horizontal=True
             )
             
+            # กรองค่าตามความเสี่ยงที่กดเลือกเพื่อแปรผลตัวเลขลงกล่องย่อยด้านล่าง
             df_filtered_risk = df[df[risk_col].astype(str).str.strip().str.title() == selected_risk.title()]
             
             r_pending = len(df_filtered_risk[df_filtered_risk[status_col].astype(str).str.contains('รอดำเนินการ|Pending', na=False, case=False)])
@@ -445,7 +479,7 @@ elif menu == "📅 Calendar & Case Detail":
                 """)
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # --- 📌 อัปเดตล่าสุด: ค้นหาคอลัมน์รูปอัตโนมัติและแก้รหัส Base64 ---
+                # --- ค้นหาคอลัมน์รูปภาพอัตโนมัติและแก้ปัญหาการถอดรหัส Base64 ---
                 st.markdown("<h4 style='color: #a1a1aa; font-size: 15px; margin-top: 15px;'>📸 ภาพประกอบ (Before & After)</h4>", unsafe_allow_html=True)
                 
                 img_before_col = next((c for c in cols if 'before' in c.lower() or 'ก่อน' in c), cols[8] if len(cols) > 8 else None)
@@ -453,11 +487,6 @@ elif menu == "📅 Calendar & Case Detail":
 
                 img_b_url = str(selected_case[img_before_col]).strip() if img_before_col and pd.notnull(selected_case[img_before_col]) else ""
                 img_a_url = str(selected_case[img_after_col]).strip() if img_after_col and pd.notnull(selected_case[img_after_col]) else ""
-
-                def decode_base64_img(b64_str):
-                    if "," in b64_str: b64_str = b64_str.split(",")[1]
-                    b64_str += "=" * ((4 - len(b64_str) % 4) % 4) 
-                    return base64.b64decode(b64_str)
 
                 i_col1, i_col2 = st.columns(2)
                 
@@ -467,8 +496,7 @@ elif menu == "📅 Calendar & Case Detail":
                     elif len(img_b_url) > 50:
                         try:
                             st.image(decode_base64_img(img_b_url), caption="🔴 ก่อนแก้ไข (Before)", use_container_width=True)
-                        except Exception as e: 
-                            st.error(f"รูปภาพก่อนแก้ไขขัดข้อง")
+                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
                     else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพก่อนแก้ไข", use_container_width=True)
 
                 with i_col2:
@@ -477,8 +505,7 @@ elif menu == "📅 Calendar & Case Detail":
                     elif len(img_a_url) > 50:
                         try:
                             st.image(decode_base64_img(img_a_url), caption="🟢 หลังแก้ไข (After)", use_container_width=True)
-                        except Exception as e: 
-                            st.error(f"รูปภาพหลังแก้ไขขัดข้อง")
+                        except: st.error("ข้อมูลรูปรหัส Base64 ไม่สมบูรณ์")
                     else: st.image("https://cdn-icons-png.flaticon.com/512/1161/1161388.png", caption="ไม่มีภาพหลังแก้ไข", use_container_width=True)
                 
                 st.markdown("---")
@@ -509,37 +536,9 @@ elif menu == "📅 Calendar & Case Detail":
                 """, unsafe_allow_html=True)
     else:
         st.warning("⚠️ ไม่มีข้อมูลเพื่อแสดงผลบนปฏิทิน")
-import io
-from PIL import Image
-
-# ฟังก์ชันบีบอัดรูปภาพก่อนแปลงเป็น Base64
-def compress_image_to_b64(uploaded_file):
-    if uploaded_file is None:
-        return ""
-    try:
-        # เปิดรูป
-        img = Image.open(uploaded_file)
-        # แปลงเป็น RGB (ป้องกันปัญหาไฟล์ PNG แบบโปร่งใส)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        
-        # ย่อขนาดรูป (ลด Resolution) ให้กว้างสุดแค่ 600px ก็พอสำหรับการดูบนเว็บ
-        max_size = (600, 600)
-        img.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # บีบอัดคุณภาพรูป (Quality=50) แล้วบันทึกลงหน่วยความจำ
-        buffered = io.BytesIO()
-        img.save(buffered, format="JPEG", quality=50)
-        
-        # แปลงเป็น Base64
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        return img_str
-    except Exception as e:
-        st.error(f"ย่อรูปภาพล้มเหลว: {e}")
-        return ""
 
 # ==========================================
-# MODULE 3: REPORT NEW CASE
+# MODULE 3: REPORT NEW CASE (ระบบย่อขนาดบีบอัดภาพก่อนส่ง)
 # ==========================================
 elif menu == "📝 Report New Case":
     st.title("📝 รายงานเคสความเสี่ยงใหม่")
@@ -558,7 +557,7 @@ elif menu == "📝 Report New Case":
         
         if st.form_submit_button("🚀 บันทึกข้อมูล"):
             try:
-                # เรียกใช้ฟังก์ชันบีบอัดที่เราเพิ่งสร้าง
+                # เรียกใช้งานฟังก์ชันบีบอัดรูปลด Resolution ป้องกันข้อความยาวเกินลิมิตเซลล์ใน Google Sheets
                 b64_before = compress_image_to_b64(up_before)
                 b64_after = compress_image_to_b64(up_after)
                 
@@ -570,11 +569,10 @@ elif menu == "📝 Report New Case":
                     "imgAfterBase64": b64_after,
                     "imgAfterName": up_after.name if up_after else ""
                 }
-                res = requests.post(API_URL, json=payload, timeout=20) # เพิ่ม timeout เผื่อเน็ตช้าตอนส่งรูป
+                res = requests.post(API_URL, json=payload, timeout=20)
                 if res.status_code == 200: 
-                    st.success("🎉 บันทึกข้อมูลพร้อมรูปภาพสำเร็จ!")
+                    st.success("🎉 บันทึกข้อมูลพร้อมย่อขนาดรูปภาพสำเร็จ! อัปเดตเข้าระบบเรียบร้อย")
                     st.cache_data.clear() 
-                else: 
-                    st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
+                else: st.error(f"❌ ไม่สามารถบันทึกได้ API รหัส: {res.status_code}")
             except Exception as e:
                 st.error(f"❌ เกิดข้อผิดพลาดขณะส่งข้อมูล: {e}")
