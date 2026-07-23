@@ -19,7 +19,7 @@ st.set_page_config(page_title="Safe Together System", page_icon="🛡️", layou
 API_URL = "https://script.google.com/macros/s/AKfycby1dCW6VBBUQnx1fSi3OAsN5Tf7RGjTKaEDxmAxf8lyUK9B9DQcUUxM2ekWxP1vGjuM/exec"
 
 # ==========================================
-# 2. PREMIUM DARK MODE CSS
+# 2. PREMIUM LIGHT MODE CSS
 # ==========================================
 st.markdown("""
     <style>
@@ -27,19 +27,19 @@ st.markdown("""
     
     html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        background-color: #000000 !important;
-        color: #ffffff !important;
+        background-color: #f4f6f8 !important; /* สีพื้นหลังสว่าง */
+        color: #111827 !important; /* สีตัวอักษรเข้ม */
     }
     
     [data-testid="stSidebar"] {
-        background-color: #09090b !important;
-        border-right: 1px solid #1f1f23;
+        background-color: #ffffff !important; /* แถบด้านข้างสีขาว */
+        border-right: 1px solid #e5e7eb;
     }
 
     div[data-testid="stButton"] > button {
-        background-color: #18181b !important; 
-        color: #ffffff !important; 
-        border: 1px solid #33333a !important;
+        background-color: #ffffff !important; 
+        color: #111827 !important; 
+        border: 1px solid #d1d5db !important;
     }
     div[data-testid="stButton"] > button:hover {
         border-color: #0a84ff !important;
@@ -52,31 +52,31 @@ st.markdown("""
     }
     
     div[data-baseweb="select"] > div, input, textarea {
-        background-color: #18181b !important;
-        color: #ffffff !important;
-        border-color: #33333a !important;
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border-color: #d1d5db !important;
     }
-    label, div[data-testid="stWidgetLabel"] p { color: #e5e5ea !important; }
+    label, div[data-testid="stWidgetLabel"] p { color: #374151 !important; font-weight: 500; }
     
     .dashboard-card {
-        background: #111114; padding: 24px; border-radius: 12px;
-        border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 24px;
+        background: #ffffff; padding: 24px; border-radius: 12px;
+        border: 1px solid #e5e7eb; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); margin-bottom: 24px;
     }
     .dashboard-card-title {
-        font-size: 16px; font-weight: 600; color: #ffffff;
+        font-size: 16px; font-weight: 600; color: #111827;
         margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
 
     .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
     .kpi-card {
-        background: #111114; border-radius: 12px; padding: 20px; border-left: 5px solid #333;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-top: 1px solid #222227; border-right: 1px solid #222227; border-bottom: 1px solid #222227;
+        background: #ffffff; border-radius: 12px; padding: 20px; border-left: 5px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
         transition: transform 0.2s;
     }
-    .kpi-card:hover { transform: translateY(-3px); }
-    .kpi-label { font-size: 13px; font-weight: 500; color: #a1a1aa; text-transform: uppercase; }
-    .kpi-value { font-size: 28px; font-weight: 700; color: #ffffff; margin: 8px 0 4px 0; }
-    .kpi-subtext { font-size: 12px; color: #8e8e93; }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    .kpi-label { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: #111827; margin: 8px 0 4px 0; }
+    .kpi-subtext { font-size: 12px; color: #9ca3af; }
     
     .kpi-total { border-left-color: #0a84ff; }
     .kpi-success { border-left-color: #30d158; }
@@ -84,20 +84,20 @@ st.markdown("""
     .kpi-rate { border-left-color: #bf5af2; }
 
     .responsive-card {
-        background-color: #111114; padding: 24px; border-radius: 12px; 
-        border: 1px solid #222227; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); margin-bottom: 20px; color: #ffffff; word-wrap: break-word;
+        background-color: #ffffff; padding: 24px; border-radius: 12px; 
+        border: 1px solid #e5e7eb; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); margin-bottom: 20px; color: #111827; word-wrap: break-word;
     }
-    .card-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222227; padding-bottom: 14px; margin-bottom: 18px; }
-    .card-title-text { font-size: 16px; font-weight: 700; color: #ffffff; }
-    .card-date-text { color: #a1a1aa; font-size: 13px; font-weight: 500; }
-    .case-p { margin: 10px 0; font-size: 14px; color: #e5e5ea; line-height: 1.6; }
+    .card-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 14px; margin-bottom: 18px; }
+    .card-title-text { font-size: 16px; font-weight: 700; color: #111827; }
+    .card-date-text { color: #6b7280; font-size: 13px; font-weight: 600; }
+    .case-p { margin: 10px 0; font-size: 14px; color: #374151; line-height: 1.6; }
     .case-p-highlight { color: #0a84ff; font-weight: 600; }
     
-    .timeline-container { background-color: #16161a; border-radius: 12px; padding: 18px; border: 1px solid #222227; margin-top: 20px; }
+    .timeline-container { background-color: #f9fafb; border-radius: 12px; padding: 18px; border: 1px solid #e5e7eb; margin-top: 20px; }
     .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .timeline-row { border-left: 2px solid #3a3a3c; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #d1d1d6; }
-    .timeline-dot { position: absolute; left: -6px; top: 2px; color: #a1a1aa; font-size: 11px; }
-    .empty-state-box { background-color: #111114; padding: 50px 20px; border-radius: 12px; text-align: center; border: 1px dashed #3a3a3c; color: #ffffff; }
+    .timeline-row { border-left: 2px solid #d1d5db; padding-left: 18px; position: relative; margin-bottom: 12px; font-size: 13px; color: #4b5563; }
+    .timeline-dot { position: absolute; left: -6px; top: 2px; color: #6b7280; font-size: 11px; }
+    .empty-state-box { background-color: #ffffff; padding: 50px 20px; border-radius: 12px; text-align: center; border: 1px dashed #d1d5db; color: #111827; }
 
     @media (max-width: 768px) {
         .kpi-container { grid-template-columns: 1fr; }
@@ -110,7 +110,6 @@ st.markdown("""
 # 3. HELPER FUNCTIONS (ระบบจัดการรูปภาพ)
 # ==========================================
 def compress_image_to_b64(uploaded_file):
-    """ปรับปรุงใหม่: เพิ่มความละเอียดภาพให้คมชัดสะใจ ไม่แตกเบลอ"""
     if uploaded_file is None:
         return ""
     try:
@@ -118,18 +117,14 @@ def compress_image_to_b64(uploaded_file):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # ✅ 1. เพิ่มขนาดภาพขยับเป็น 1024x1024 พิกเซล (ชัดระดับ HD)
         img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
         buffered = io.BytesIO()
-        
-        # ✅ 2. เพิ่มคุณภาพความคมชัดขึ้นเป็น 75% (ภาพเนียน ไม่แตกเป็นเม็ด)
         img.save(buffered, format="JPEG", quality=75) 
         return base64.b64encode(buffered.getvalue()).decode()
     except Exception:
         return ""
 
 def decode_base64_img(b64_str):
-    """ถอดรหัส Base64 (กรณีส่งรูปปกติแบบไม่พึ่ง Drive)"""
     try:
         if "," in b64_str: 
             b64_str = b64_str.split(",")[1]
@@ -139,27 +134,18 @@ def decode_base64_img(b64_str):
         return None
 
 def extract_and_convert_url(raw_text):
-    """
-    ฟังก์ชันอัจฉริยะ: ดึง URL ออกจากสูตร =IMAGE() และแปลงลิงก์ Google Drive 
-    เป็นลิงก์แบบ Thumbnail เพื่อให้โชว์รูปได้แน่นอน 100% ไม่โดนบล็อก
-    """
     if not raw_text or str(raw_text).lower() in ["nan", "-", "none", ""]:
         return ""
     
     url = str(raw_text).strip()
-    
-    # ดึงเฉพาะ URL ที่อยู่ในเครื่องหมายคำพูดของสูตร =IMAGE("...")
     match_img = re.search(r'IMAGE\("([^"]+)"\)', url, re.IGNORECASE)
     if match_img:
         url = match_img.group(1)
         
-    # แปลงลิงก์ Drive ทั่วไป เป็นลิงก์ Thumbnail เพื่อกันโดน Google บล็อก
     if "drive.google.com/file/d/" in url or "drive.google.com/uc" in url:
-        # หาชุดรหัส File ID
         match_id = re.search(r'([-\w]{25,})', url)
         if match_id:
             file_id = match_id.group(1)
-            # ใช้ API ดึงภาพขนาดย่อความละเอียดสูง (w800) ซึ่งจะโหลดไวและไม่แครช
             return f"https://drive.google.com/thumbnail?id={file_id}&sz=w800"
             
     return url
@@ -200,7 +186,7 @@ menu = st.sidebar.radio("เมนูใช้งาน:", ["📊 Dashboard", "�
 # MODULE 1: DASHBOARD
 # ==========================================
 if menu == "📊 Dashboard":
-    st.markdown("<h2 style='color: #ffffff; font-weight: 700; margin-bottom: 20px;'>📊 Overview & Risk Analytics</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #111827; font-weight: 700; margin-bottom: 20px;'>📊 Overview & Risk Analytics</h2>", unsafe_allow_html=True)
     
     if not df.empty:
         try:
@@ -232,13 +218,12 @@ if menu == "📊 Dashboard":
 
             g_col1, g_col2 = st.columns(2)
             with g_col1:
-                # ปรับ text-align: center (จัดกึ่งกลาง) และ font-size: 22px (ขยายขนาดตัวหนังสือ) พร้อมเพิ่ม gap เป็น 12px ให้ไอคอนดูไม่ติดตัวหนังสือเกินไปครับ
                 st.markdown('<div class="dashboard-card"><div class="dashboard-card-title" style="justify-content: center; font-size: 22px; width: 100%; gap: 12px;">💡 สัดส่วนสถานะงาน</div>', unsafe_allow_html=True)
                 status_counts = df[status_col].value_counts().reset_index()
                 status_counts.columns = ['Status', 'Count']
                 fig_pie = px.pie(status_counts, values='Count', names='Status', hole=0.55, color='Status', color_discrete_map=status_colors)
-                fig_pie.update_layout(template='plotly_dark', showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#111114', width=2)))
+                fig_pie.update_layout(template='plotly_white', showlegend=False, margin=dict(t=0, b=0, l=0, r=0), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig_pie.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#ffffff', width=2)))
                 st.plotly_chart(fig_pie, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
@@ -247,9 +232,9 @@ if menu == "📊 Dashboard":
                 risk_counts = df[risk_col].value_counts().reindex(['Low', 'Medium', 'High'], fill_value=0).reset_index()
                 risk_counts.columns = ['Risk', 'Count']
                 fig_bar = px.bar(risk_counts, x='Risk', y='Count', color='Risk', text='Count', color_discrete_map={'High': '#ff453a', 'Medium': '#ffb703', 'Low': '#30d158'})
-                fig_bar.update_traces(textposition='outside', textfont=dict(color='#ffffff', size=14))
-                fig_bar.update_layout(template='plotly_dark', showlegend=False, xaxis_title="", yaxis_title="เคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                fig_bar.update_yaxes(gridcolor='#222227')
+                fig_bar.update_traces(textposition='outside', textfont=dict(color='#111827', size=14))
+                fig_bar.update_layout(template='plotly_white', showlegend=False, xaxis_title="", yaxis_title="เคส", margin=dict(t=10, b=10, l=10, r=10), height=280, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig_bar.update_yaxes(gridcolor='#e5e7eb')
                 st.plotly_chart(fig_bar, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
@@ -263,17 +248,17 @@ if menu == "📊 Dashboard":
             
             st.markdown(f"""
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                    <div style="background: #111114; border: 1px solid #222227; border-top: 4px solid #ff453a; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; font-weight: 600;">🚨 High</div>
-                        <div style="font-size: 36px; font-weight: 700; color: #ffffff;">{total_high}</div>
+                    <div style="background: #ffffff; border: 1px solid #e5e7eb; border-top: 4px solid #ff453a; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                        <div style="color: #6b7280; font-weight: 600;">🚨 High</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #111827;">{total_high}</div>
                     </div>
-                    <div style="background: #111114; border: 1px solid #222227; border-top: 4px solid #ffb703; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; font-weight: 600;">⚠️ Medium</div>
-                        <div style="font-size: 36px; font-weight: 700; color: #ffffff;">{total_medium}</div>
+                    <div style="background: #ffffff; border: 1px solid #e5e7eb; border-top: 4px solid #ffb703; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                        <div style="color: #6b7280; font-weight: 600;">⚠️ Medium</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #111827;">{total_medium}</div>
                     </div>
-                    <div style="background: #111114; border: 1px solid #222227; border-top: 4px solid #30d158; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; font-weight: 600;">✅ Low</div>
-                        <div style="font-size: 36px; font-weight: 700; color: #ffffff;">{total_low}</div>
+                    <div style="background: #ffffff; border: 1px solid #e5e7eb; border-top: 4px solid #30d158; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+                        <div style="color: #6b7280; font-weight: 600;">✅ Low</div>
+                        <div style="font-size: 36px; font-weight: 700; color: #111827;">{total_low}</div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -288,17 +273,17 @@ if menu == "📊 Dashboard":
             
             st.markdown(f"""
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
-                    <div style="background: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">📥 รอดำเนินการ</div><div style="font-size: 32px; font-weight: 700; color: #ff453a;">{r_pending}</div>
+                    <div style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="color: #4b5563; margin-bottom: 8px; font-weight: 600;">📥 รอดำเนินการ</div><div style="font-size: 32px; font-weight: 700; color: #ff453a;">{r_pending}</div>
                     </div>
-                    <div style="background: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">🛠️ กำลังดำเนินการ</div><div style="font-size: 32px; font-weight: 700; color: #ff9f0a;">{r_progress}</div>
+                    <div style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="color: #4b5563; margin-bottom: 8px; font-weight: 600;">🛠️ กำลังดำเนินการ</div><div style="font-size: 32px; font-weight: 700; color: #ff9f0a;">{r_progress}</div>
                     </div>
-                    <div style="background: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">🟢 เรียบร้อย</div><div style="font-size: 32px; font-weight: 700; color: #30d158;">{r_completed}</div>
+                    <div style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="color: #4b5563; margin-bottom: 8px; font-weight: 600;">🟢 เรียบร้อย</div><div style="font-size: 32px; font-weight: 700; color: #30d158;">{r_completed}</div>
                     </div>
-                    <div style="background: #1c2431; border: 1px solid #303f56; padding: 20px; border-radius: 8px; text-align: center;">
-                        <div style="color: #a1a1aa; margin-bottom: 8px; font-weight: 600;">⚪ ไม่พบประเด็น</div><div style="font-size: 32px; font-weight: 700; color: #8e8e93;">{r_no_issue}</div>
+                    <div style="background: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="color: #4b5563; margin-bottom: 8px; font-weight: 600;">⚪ ไม่พบประเด็น</div><div style="font-size: 32px; font-weight: 700; color: #8e8e93;">{r_no_issue}</div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -349,7 +334,7 @@ elif menu == "📅 Calendar & Case Detail":
                 
                 header = st.columns(7)
                 for i, name in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
-                    header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#a1a1aa; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
+                    header[i].markdown(f"<p style='text-align:center; font-weight:bold; color:#6b7280; margin-bottom:5px;'>{name}</p>", unsafe_allow_html=True)
                 
                 for week in month_days:
                     cols_grid = st.columns(7)
@@ -390,7 +375,7 @@ elif menu == "📅 Calendar & Case Detail":
             selected_case = df.loc[idx] if idx is not None and idx in df.index else (daily_cases.iloc[0] if "ตาราง" in view_mode and not daily_cases.empty else (monthly_data.iloc[0] if "รายการ" in view_mode and not monthly_data.empty else None))
 
             if selected_case is not None:
-                display_color = "#e5e5ea"
+                display_color = "#374151"
                 status_txt = str(selected_case[status_col])
                 if "เรียบร้อย" in status_txt or "Complete" in status_txt: display_color = "#30d158" 
                 elif "รอดำเนินการ" in status_txt or "Pending" in status_txt: display_color = "#ff453a" 
@@ -403,18 +388,18 @@ elif menu == "📅 Calendar & Case Detail":
                             <span class="card-date-text">{selected_case[date_col].strftime('%b %d')}</span>
                         </div>
                         <p class="case-p"><strong>Topic:</strong> <span class="case-p-highlight">{selected_case[topic_col]}</span></p>
-                        <hr style="border:0; border-top:1px solid #222227; margin:12px 0;">
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin:12px 0;">
                         <p class="case-p">📍 <strong>Location:</strong> {selected_case[loc_col]}</p>
                         <p class="case-p">👤 <strong>Responsible:</strong> {selected_case[resp_col]}</p>
                         <p class="case-p">🔄 <strong>Status:</strong> <span style="color: {display_color}; font-weight: bold;">{status_txt}</span></p>
                         <p class="case-p">🛠 <strong>Action:</strong> {selected_case[action_col]}</p>
-                        <hr style="border:0; border-top:1px solid #222227; margin:12px 0;">
-                        <p class="case-p" style="font-weight:bold; color:#ffffff;">Risk Level: {str(selected_case[risk_col]).title()}</p>
+                        <hr style="border:0; border-top:1px solid #e5e7eb; margin:12px 0;">
+                        <p class="case-p" style="font-weight:bold; color:#111827;">Risk Level: {str(selected_case[risk_col]).title()}</p>
                     </div>
                 """), unsafe_allow_html=True)
                 
                 # --- 📌 แสดงรูปภาพไซส์ใหญ่พิเศษ (คลิกขยายได้) ---
-                st.markdown("<h4 style='color:#a1a1aa; font-size:16px; margin-top:20px; border-bottom:1px solid #222227; padding-bottom:10px;'>📸 ภาพประกอบ (คลิกเพื่อขยายเต็มจอ)</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color:#4b5563; font-size:16px; margin-top:20px; border-bottom:1px solid #e5e7eb; padding-bottom:10px;'>📸 ภาพประกอบ (คลิกเพื่อขยายเต็มจอ)</h4>", unsafe_allow_html=True)
                 
                 img_before_col = next((c for c in cols if 'before' in c.lower() or 'ก่อน' in c), cols[8] if len(cols) > 8 else None)
                 img_after_col = next((c for c in cols if 'after' in c.lower() or 'หลัง' in c), cols[9] if len(cols) > 9 else None)
